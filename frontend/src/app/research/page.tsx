@@ -86,7 +86,7 @@ export default function ResearchPage() {
             </button>
             <div className="h-4 w-[1px] bg-white/10" />
             <h1 className="text-[10px] font-black uppercase tracking-[0.5em] text-white italic">
-              SYNAPSE <span className="text-primary not-italic">RESEARCH</span>
+              SYNAPSE<span className="text-primary not-italic">X</span> <span className="text-gray-400 not-italic font-light">Research</span>
             </h1>
           </div>
           

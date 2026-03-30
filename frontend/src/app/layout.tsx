@@ -2,13 +2,13 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Synapse War Room",
-  description: "Your AI curriculum tutor",
+  title: "Synapse X",
+  description: "Your AI tutor for building real AI systems",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Synapse",
+    title: "Synapse X",
   },
 };
 

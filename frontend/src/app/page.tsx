@@ -46,22 +46,22 @@ export default function GatewayPage() {
           className="text-center mb-10"
         >
           <div className="inline-flex items-center gap-2 mb-8 px-4 py-1.5 rounded-full glass-panel-prism text-[10px] sm:text-xs font-mono tracking-[0.3em] uppercase text-primary border border-primary/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-            Neural Link: Active
+            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+            Nova Online
           </div>
-          
-          <h1 className="text-6xl sm:text-8xl font-black tracking-tighter mb-4 leading-none text-white italic">
-            SYNAPSE
+
+          <h1 className="text-6xl sm:text-8xl font-black tracking-tighter mb-2 leading-none text-white italic">
+            SYNAPSE<span className="text-primary">X</span>
           </h1>
-          
+
           <div className="flex items-center justify-center gap-4 mb-8">
             <h2 className="text-xl sm:text-2xl font-light tracking-[0.5em] uppercase text-gray-400">
-               Chat · Code · Research
+              Chat · Build · Research
             </h2>
           </div>
 
-          <p className="max-w-xl mx-auto text-gray-500 text-sm sm:text-base leading-relaxed font-light italic">
-            Deep dive into the neural curriculum. Master the 12-week roadmap.
+          <p className="max-w-xl mx-auto text-gray-400 text-sm sm:text-base leading-relaxed font-light">
+            Your personal AI tutor for the 12-week AI engineering curriculum. Ask anything — Nova has you covered.
           </p>
         </motion.div>
 
@@ -77,14 +77,14 @@ export default function GatewayPage() {
               <input
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Initialize session..."
+                placeholder="Ask Nova anything about the curriculum..."
                 className="flex-1 bg-transparent border-none px-6 py-4 text-white placeholder-gray-600 focus:outline-none text-base sm:text-lg font-light"
               />
               <button
                 type="submit"
                 className="bg-primary text-black px-8 py-4 rounded-xl font-black text-xs tracking-widest uppercase hover:bg-white transition-all duration-300 active:scale-95"
               >
-                Launch
+                Ask →
               </button>
             </div>
           </form>
@@ -93,7 +93,7 @@ export default function GatewayPage() {
         {/* Roadmap Grid */}
         <div className="w-full mb-12">
           <div className="flex items-center justify-between mb-6 px-2">
-            <p className="text-[10px] uppercase tracking-widest text-gray-500 font-mono">12-Week Roadmap</p>
+            <p className="text-[10px] uppercase tracking-widest text-gray-500 font-mono">12-Week Curriculum</p>
             <div className="h-[1px] flex-1 mx-4 bg-white/5" />
           </div>
           

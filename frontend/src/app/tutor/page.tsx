@@ -103,6 +103,10 @@ export default function TutorPage() {
   const [postCheck, setPostCheck] = useState<any>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Week navigation — viewingWeek lets user browse any week without changing progress
+  const [viewingWeek, setViewingWeek] = useState(currentWeek);
+  useEffect(() => { setViewingWeek(currentWeek); }, [currentWeek]);
+
   // Find More Resources
   const [resourcesOpen, setResourcesOpen] = useState(false);
   const [moreResources, setMoreResources] = useState<MoreResource[]>([]);
@@ -228,8 +232,8 @@ export default function TutorPage() {
     }
   }
 
-  const currentTopics = topics.filter((t) => t.week === currentWeek);
-  const weekResources = WEEK_RESOURCES[currentWeek] || [];
+  const currentTopics = topics.filter((t) => t.week === viewingWeek);
+  const weekResources = WEEK_RESOURCES[viewingWeek] || [];
   const xpPercent = Math.min((xp / 1200) * 100, 100);
 
   // ── Curriculum Panel ────────────────────────────────────────────────────────
@@ -241,9 +245,17 @@ export default function TutorPage() {
             <path d="M12 2L1 12h3v9h6v-6h4v6h6v-9h3L12 2z" />
           </svg>
         </div>
-        <div className="text-[10px] font-mono text-primary/60 uppercase tracking-[0.2em] mb-2">Subject Mastery</div>
-        <div className="text-4xl font-black text-white mb-1 leading-none">{currentWeek}</div>
-        <div className="text-sm font-light text-gray-400 mb-6 uppercase tracking-widest">{WEEK_NAMES[currentWeek]}</div>
+        <div className="text-[10px] font-mono text-primary/60 uppercase tracking-[0.2em] mb-2">Your Progress</div>
+        <div className="flex items-center justify-between mb-1">
+          <div className="text-4xl font-black text-white leading-none">Wk {viewingWeek}</div>
+          <div className="flex items-center gap-1">
+            <button onClick={() => setViewingWeek(w => Math.max(1, w - 1))} disabled={viewingWeek <= 1}
+              className="w-7 h-7 rounded-lg glass-panel-prism flex items-center justify-center text-gray-400 hover:text-primary disabled:opacity-20 transition-all text-xs">‹</button>
+            <button onClick={() => setViewingWeek(w => Math.min(12, w + 1))} disabled={viewingWeek >= 12}
+              className="w-7 h-7 rounded-lg glass-panel-prism flex items-center justify-center text-gray-400 hover:text-primary disabled:opacity-20 transition-all text-xs">›</button>
+          </div>
+        </div>
+        <div className="text-sm font-light text-gray-400 mb-6 uppercase tracking-widest">{WEEK_NAMES[viewingWeek]}{viewingWeek !== currentWeek && <span className="ml-2 text-[9px] text-primary/50 normal-case tracking-normal">(your week: {currentWeek})</span>}</div>
         
         <div className="space-y-2">
           <div className="flex justify-between text-[10px] uppercase font-mono">
@@ -268,7 +280,7 @@ export default function TutorPage() {
       <div>
         <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-primary/40" />
-          Available Modules
+          Week {viewingWeek} Topics
         </div>
         <div className="flex flex-wrap gap-2">
           {currentTopics.map((t) => (
@@ -287,24 +299,29 @@ export default function TutorPage() {
       </div>
 
       <div className="mt-auto">
-        <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-3">Roadmap Timeline</div>
-        <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+        <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-3">All 12 Weeks</div>
+        <div className="space-y-1 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
           {Array.from({ length: 12 }, (_, i) => i + 1).map((w) => {
             const done = completedWeeks.includes(w);
             const isCurrent = w === currentWeek;
+            const isViewing = w === viewingWeek;
             return (
-              <div
+              <button
                 key={w}
-                className={`flex items-center gap-4 px-4 py-3 rounded-xl text-xs font-mono transition-all duration-300 ${
-                  isCurrent ? "glass-panel-prism border-primary/40 text-primary shadow-lg shadow-primary/5" :
-                  done ? "text-primary/40" : "text-gray-600 opacity-60"
+                onClick={() => setViewingWeek(w)}
+                className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-xs font-mono transition-all duration-200 text-left ${
+                  isViewing ? "glass-panel-prism border-primary/40 text-primary shadow-lg shadow-primary/5" :
+                  done ? "text-primary/40 hover:text-primary/70 hover:bg-white/5" :
+                  isCurrent ? "text-white/60 hover:text-white hover:bg-white/5" :
+                  "text-gray-600 hover:text-gray-400 hover:bg-white/5"
                 }`}
               >
-                <span className="w-4 flex justify-center">
+                <span className="w-4 flex justify-center flex-shrink-0">
                   {done ? "✓" : isCurrent ? "▶" : w}
                 </span>
-                <span className="uppercase tracking-widest">{WEEK_NAMES[w]}</span>
-              </div>
+                <span className="uppercase tracking-widest truncate">{WEEK_NAMES[w]}</span>
+                {isViewing && !isCurrent && <span className="ml-auto text-[8px] text-primary/40">viewing</span>}
+              </button>
             );
           })}
         </div>
@@ -328,9 +345,9 @@ export default function TutorPage() {
             <div className="w-16 h-16 rounded-full glass-panel-prism flex items-center justify-center text-2xl mb-6 pulse-primary border-primary/20">
               💎
             </div>
-            <h3 className="text-2xl font-black text-white italic tracking-tighter uppercase">SYNAPSE ACTIVE</h3>
-            <p className="text-gray-500 text-sm italic font-light italic">
-              Module {currentWeek} neural interface is online. Master the content.
+            <h3 className="text-2xl font-black text-white italic tracking-tighter uppercase">NOVA READY</h3>
+            <p className="text-gray-500 text-sm font-light">
+              Ask a question, pick a topic, or jump straight into Week {viewingWeek}.
             </p>
           </div>
         )}
@@ -342,7 +359,7 @@ export default function TutorPage() {
         {loading && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-start gap-4">
             <div className="w-10 h-10 rounded-xl glass-panel-prism flex items-center justify-center text-[10px] font-bold text-primary border-primary/30">
-              AI
+              NV
             </div>
             <div className="glass-panel-prism rounded-2xl p-4 flex gap-2 border-primary/10">
               <span className="w-2 h-2 rounded-full bg-primary/40 animate-pulse" />
@@ -365,8 +382,8 @@ export default function TutorPage() {
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xl">🏆</div>
               <div>
-                <div className="text-xs font-bold text-white uppercase tracking-widest">Milestone Detected</div>
-                <div className="text-[10px] text-gray-500 font-mono">Week {currentWeek} requirements met.</div>
+                <div className="text-xs font-bold text-white uppercase tracking-widest">Week {currentWeek} Complete</div>
+                <div className="text-[10px] text-gray-500 font-mono">Ready to advance to Week {currentWeek + 1}?</div>
               </div>
             </div>
             <button 
@@ -378,7 +395,7 @@ export default function TutorPage() {
               }}
               className="px-6 py-2 bg-primary text-black text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-white transition-all shadow-lg shadow-primary/20"
             >
-              Secure Progress
+              Advance →
             </button>
           </motion.div>
         )}
@@ -392,7 +409,7 @@ export default function TutorPage() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-              placeholder={`Communicate with Week ${currentWeek} logic...`}
+              placeholder={`Ask Nova anything about Week ${viewingWeek}...`}
               className="flex-1 bg-transparent border-none px-6 py-4 text-white placeholder-gray-600 focus:outline-none text-sm font-light"
             />
             <button
@@ -415,7 +432,7 @@ export default function TutorPage() {
     <div className="h-full overflow-y-auto p-6 space-y-8 custom-scrollbar">
       <div>
         <div className="flex items-center justify-between mb-6">
-          <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">Neural Training Data</div>
+          <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">Week {viewingWeek} Resources</div>
           <button
             onClick={handleFindMoreResources}
             className="px-3 py-1.5 rounded-lg text-[9px] font-mono uppercase tracking-widest text-primary/70 hover:text-primary border border-primary/20 hover:border-primary/50 hover:bg-primary/5 transition-all"
@@ -445,7 +462,7 @@ export default function TutorPage() {
       </div>
 
       <div className="pt-6 border-t border-white/5">
-        <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-4">Quick Protocols</div>
+        <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-4">Key Docs</div>
         <div className="grid grid-cols-1 gap-2">
           {[
             { label: "Anthropic API", url: "https://docs.anthropic.com" },
@@ -478,7 +495,7 @@ export default function TutorPage() {
           </button>
           <div className="h-4 w-[1px] bg-white/10" />
           <div className="text-[10px] font-black uppercase tracking-[0.5em] text-white italic">
-            SYNAPSE <span className="text-primary not-italic">CHAT</span>
+            SYNAPSE<span className="text-primary not-italic">X</span>
           </div>
         </div>
         
@@ -738,7 +755,7 @@ function MessageBubble({ message }: { message: Message }) {
       <div className={`w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center text-[10px] font-black border transition-colors ${
         isUser ? "bg-white text-black border-white" : "glass-panel-prism text-primary border-primary/30"
       }`}>
-        {isUser ? "USR" : "AI"}
+        {isUser ? "YOU" : "NV"}
       </div>
       <div className={`max-w-[90%] sm:max-w-[75%] ${isUser ? "items-end" : "items-start"} flex flex-col gap-2`}>
         <div className={`rounded-3xl p-5 sm:p-7 text-sm font-light leading-relaxed tracking-wide shadow-2xl transition-all ${
