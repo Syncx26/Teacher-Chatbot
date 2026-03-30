@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useAppStore, Message } from "@/lib/store";
-import { sendMessage, getProgress, getTopics, advanceWeek } from "@/lib/api";
+import { sendMessage, getProgress, getTopics, advanceWeek, getMoreResources, proposeTopic, confirmTopic, MoreResource, TopicProposal } from "@/lib/api";
 import ConfidenceBadge from "@/components/ConfidenceBadge";
 import ModelBadge from "@/components/ModelBadge";
 import PomodoroTimer from "@/components/PomodoroTimer";
@@ -55,6 +55,21 @@ export default function TutorPage() {
   const [postCheck, setPostCheck] = useState<any>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Find More Resources
+  const [resourcesOpen, setResourcesOpen] = useState(false);
+  const [moreResources, setMoreResources] = useState<MoreResource[]>([]);
+  const [resourcesLoading, setResourcesLoading] = useState(false);
+
+  // Add Custom Topic
+  type AddStep = "input" | "proposal" | "questions" | "done";
+  const [addOpen, setAddOpen] = useState(false);
+  const [addStep, setAddStep] = useState<AddStep>("input");
+  const [addTopicName, setAddTopicName] = useState("");
+  const [addProposal, setAddProposal] = useState<TopicProposal | null>(null);
+  const [addAnswers, setAddAnswers] = useState<Record<string, string>>({});
+  const [addLoading, setAddLoading] = useState(false);
+  const [addedTopic, setAddedTopic] = useState("");
+
   useEffect(() => {
     if (!userId) return;
     getProgress(userId).then(setProgress).catch(console.error);
@@ -85,6 +100,57 @@ export default function TutorPage() {
       addMessage({ role: "assistant", content: "Signal lost. Attempt reconnection...", timestamp: new Date().toISOString() });
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleFindMoreResources() {
+    setResourcesOpen(true);
+    if (moreResources.length > 0) return;
+    setResourcesLoading(true);
+    try {
+      const res = await getMoreResources(userId, WEEK_NAMES[currentWeek] ?? "AI Engineering", currentWeek);
+      setMoreResources(res);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setResourcesLoading(false);
+    }
+  }
+
+  function openAddModal() {
+    setAddOpen(true);
+    setAddStep("input");
+    setAddTopicName("");
+    setAddProposal(null);
+    setAddAnswers({});
+    setAddedTopic("");
+  }
+
+  async function handlePropose() {
+    if (!addTopicName.trim()) return;
+    setAddLoading(true);
+    try {
+      const proposal = await proposeTopic(userId, addTopicName.trim());
+      setAddProposal(proposal);
+      setAddStep("proposal");
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setAddLoading(false);
+    }
+  }
+
+  async function handleConfirmTopic() {
+    if (!addProposal) return;
+    setAddLoading(true);
+    try {
+      const result = await confirmTopic(userId, addTopicName, addAnswers);
+      setAddedTopic(result.label);
+      setAddStep("done");
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setAddLoading(false);
     }
   }
 
@@ -168,6 +234,13 @@ export default function TutorPage() {
             );
           })}
         </div>
+
+        <button
+          onClick={openAddModal}
+          className="mt-4 w-full py-3 rounded-xl text-[10px] font-mono uppercase tracking-widest text-primary/70 hover:text-primary transition-all border border-dashed border-primary/20 hover:border-primary/50 hover:bg-primary/5"
+        >
+          + Add Custom Topic
+        </button>
       </div>
     </div>
   );
@@ -267,7 +340,15 @@ export default function TutorPage() {
   const ResourcesPanel = (
     <div className="h-full overflow-y-auto p-6 space-y-8 custom-scrollbar">
       <div>
-        <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-6">Neural Training Data</div>
+        <div className="flex items-center justify-between mb-6">
+          <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">Neural Training Data</div>
+          <button
+            onClick={handleFindMoreResources}
+            className="px-3 py-1.5 rounded-lg text-[9px] font-mono uppercase tracking-widest text-primary/70 hover:text-primary border border-primary/20 hover:border-primary/50 hover:bg-primary/5 transition-all"
+          >
+            Find More
+          </button>
+        </div>
         <div className="space-y-3">
           {weekResources.map((r, i) => (
             <a key={i} href={r.url} target="_blank" rel="noopener noreferrer"
@@ -369,6 +450,184 @@ export default function TutorPage() {
           {ResourcesPanel}
         </aside>
       </div>
+
+      {/* Find More Resources Drawer */}
+      <AnimatePresence>
+        {resourcesOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => setResourcesOpen(false)}
+          >
+            <motion.div
+              initial={{ y: 60, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 60, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="glass-panel-prism rounded-2xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto custom-scrollbar"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <div className="text-[10px] font-mono text-primary/60 uppercase tracking-widest mb-1">Extended Resources</div>
+                  <h3 className="text-lg font-black text-white uppercase tracking-tighter">{WEEK_NAMES[currentWeek]}</h3>
+                </div>
+                <button onClick={() => setResourcesOpen(false)} className="text-gray-500 hover:text-white transition-colors text-xl leading-none">✕</button>
+              </div>
+
+              {resourcesLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-16 rounded-xl bg-white/5 animate-pulse pulse-primary" />
+                  ))}
+                </div>
+              ) : moreResources.length === 0 ? (
+                <p className="text-gray-500 text-sm font-mono text-center py-8">No resources found for this topic.</p>
+              ) : (
+                <div className="space-y-3">
+                  {moreResources.map((r, i) => (
+                    <a key={i} href={r.url} target="_blank" rel="noopener noreferrer"
+                      className="flex items-start gap-4 p-4 glass-panel-prism rounded-xl hover:bg-white/5 transition-all group border-white/5"
+                    >
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs flex-shrink-0 mt-0.5 ${r.type === "video" ? "bg-secondary/10 text-secondary" : "bg-primary/10 text-primary"}`}>
+                        {r.type === "video" ? "▶" : "◆"}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-white group-hover:text-primary transition-colors leading-tight mb-1 truncate">{r.title}</div>
+                        <div className="text-[9px] font-mono text-gray-600 uppercase mb-1">{r.type}</div>
+                        {r.description && <div className="text-[10px] text-gray-500 leading-relaxed line-clamp-2">{r.description}</div>}
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Add Custom Topic Modal */}
+      <AnimatePresence>
+        {addOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => setAddOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="glass-panel-prism rounded-2xl p-6 w-full max-w-md max-h-[85vh] overflow-y-auto custom-scrollbar"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <div className="text-[10px] font-mono text-primary/60 uppercase tracking-widest mb-1">Curriculum Expansion</div>
+                  <h3 className="text-lg font-black text-white uppercase tracking-tighter">Add Custom Topic</h3>
+                </div>
+                <button onClick={() => setAddOpen(false)} className="text-gray-500 hover:text-white transition-colors text-xl leading-none">✕</button>
+              </div>
+
+              {addStep === "input" && (
+                <div className="space-y-4">
+                  <p className="text-xs text-gray-400 font-light leading-relaxed">Name a topic you want to add to your curriculum. The AI will generate a plan and ask a few questions before adding it.</p>
+                  <input
+                    autoFocus
+                    value={addTopicName}
+                    onChange={(e) => setAddTopicName(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handlePropose()}
+                    placeholder="e.g. Async Python, Pydantic, Docker..."
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-primary/40 font-light"
+                  />
+                  <button
+                    onClick={handlePropose}
+                    disabled={!addTopicName.trim() || addLoading}
+                    className="w-full py-3 bg-primary text-black text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-white disabled:opacity-30 transition-all"
+                  >
+                    {addLoading ? "Generating plan..." : "Generate Plan →"}
+                  </button>
+                </div>
+              )}
+
+              {addStep === "proposal" && addProposal && (
+                <div className="space-y-5">
+                  <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
+                    <div className="text-[9px] font-mono text-primary/60 uppercase tracking-widest mb-2">Proposed Plan</div>
+                    <p className="text-xs text-gray-300 leading-relaxed">{addProposal.plan}</p>
+                    {addProposal.subtopics?.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {addProposal.subtopics.map((s, i) => (
+                          <span key={i} className="px-2 py-0.5 rounded-full bg-white/5 text-[9px] font-mono text-gray-400">{s}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-4">
+                    {addProposal.questions.map((q) => (
+                      <div key={q.id}>
+                        <div className="text-[10px] font-mono text-gray-400 mb-2">{q.question}</div>
+                        {q.type === "choice" && q.options ? (
+                          <div className="flex flex-wrap gap-2">
+                            {q.options.map((opt) => (
+                              <button
+                                key={opt}
+                                onClick={() => setAddAnswers((prev) => ({ ...prev, [q.id]: opt }))}
+                                className={`px-3 py-1.5 rounded-lg text-[9px] font-mono uppercase tracking-wide transition-all border ${
+                                  addAnswers[q.id] === opt
+                                    ? "bg-primary text-black border-primary"
+                                    : "border-white/10 text-gray-400 hover:border-primary/40 hover:text-primary"
+                                }`}
+                              >
+                                {opt}
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <input
+                            value={addAnswers[q.id] ?? ""}
+                            onChange={(e) => setAddAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))}
+                            placeholder="Your answer..."
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-primary/40"
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={handleConfirmTopic}
+                    disabled={addLoading || addProposal.questions.some((q) => !addAnswers[q.id]?.trim())}
+                    className="w-full py-3 bg-primary text-black text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-white disabled:opacity-30 transition-all"
+                  >
+                    {addLoading ? "Adding topic..." : "Confirm & Add →"}
+                  </button>
+                </div>
+              )}
+
+              {addStep === "done" && (
+                <div className="text-center py-6 space-y-4">
+                  <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center text-3xl mx-auto">✓</div>
+                  <div>
+                    <div className="text-white font-black uppercase tracking-widest">{addedTopic}</div>
+                    <div className="text-gray-500 text-xs font-mono mt-1">has been added to your curriculum</div>
+                  </div>
+                  <button
+                    onClick={() => setAddOpen(false)}
+                    className="px-8 py-2.5 bg-primary text-black text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-white transition-all"
+                  >
+                    Continue
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Mobile Bottom Navigation */}
       <nav className="lg:hidden flex glass-panel-prism border-t-none pb-safe">

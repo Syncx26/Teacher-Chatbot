@@ -113,3 +113,28 @@ body {
   z-index: -1;
   animation: float 10s ease-in-out infinite;
 }
+
+/* pulse-primary — used on loading spinners and status indicators */
+@keyframes pulse-primary-kf {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 245, 255, 0.4); }
+  50%       { box-shadow: 0 0 0 12px rgba(0, 245, 255, 0); }
+}
+.pulse-primary {
+  animation: pulse-primary-kf 2s ease-in-out infinite;
+}
+
+/* custom-scrollbar — thin Firefox scrollbar for scrollable panels */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+/* app-container — full-width flex container utility */
+.app-container {
+  width: 100%;
+}
+
+/* pb-safe — safe-area bottom padding for notched devices */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0.5rem);
+}

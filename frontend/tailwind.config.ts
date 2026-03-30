@@ -12,6 +12,9 @@ const config: Config = {
         success: "#10b981",
         warning: "#f59e0b",
         danger: "#ef4444",
+        // Cyber-Prism theme colors — registered so bg-primary/20, text-primary, border-primary/40 etc. all work
+        primary: "var(--primary)",   // #00f5ff cyan
+        secondary: "var(--secondary)", // #ff00ff magenta
       },
       fontFamily: {
         sans: ["Inter", "sans-serif"],
