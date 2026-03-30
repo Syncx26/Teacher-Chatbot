@@ -1,0 +1,98 @@
+{
+  "week_1": {
+    "what": "Python dicts and JSON — how to store and retrieve structured data",
+    "why": "The War Room stores country intel as JSON files. This week you build the foundation everything else sits on.",
+    "build": "Country Intel File — a dict of 5 countries saved to disk, reloaded, and printed as a formatted brief",
+    "hard_part": "Nested dicts trip most beginners. Draw the structure on paper before you code it.",
+    "time": "~3 Pomodoros",
+    "cert_track": "Azure AI Fundamentals (AI-900)"
+  },
+  "week_2": {
+    "what": "REST APIs and the requests library — how to talk to the internet from Python",
+    "why": "The Journalist Agent fetches live news via APIs. This week you learn how that works.",
+    "build": "World News Fetcher — call NewsAPI, fetch 5 headlines by country, save to JSON",
+    "hard_part": "API keys and .env files feel fiddly at first. The pattern clicks by the end.",
+    "time": "~3 Pomodoros",
+    "cert_track": "Azure AI Fundamentals (AI-900)"
+  },
+  "week_3": {
+    "what": "SQLite and SQL — a real database instead of JSON files",
+    "why": "The War Room archives thousands of news items. Files don't scale — databases do.",
+    "build": "News Archive DB — store headlines in SQLite, query by country, keyword, and date",
+    "hard_part": "SQL syntax is picky. Start with SELECT * FROM table and build from there.",
+    "time": "~3 Pomodoros",
+    "cert_track": "Azure AI Fundamentals (AI-900)"
+  },
+  "week_4": {
+    "what": "Your first LLM API call — sending data to Claude and getting back intelligence",
+    "why": "This is the moment it clicks. You'll feed real headlines into Claude and get geopolitical summaries.",
+    "build": "News Summarizer — fetch headlines → store in SQLite → send to Claude API → get 3-bullet summary",
+    "hard_part": "Understanding tokens and cost. Quick math: 1000 tokens ≈ 750 words ≈ a few cents.",
+    "time": "~4 Pomodoros",
+    "cert_track": "Azure AI Fundamentals (AI-900)"
+  },
+  "week_5": {
+    "what": "RAG — teaching the AI to answer questions using YOUR data, not just its training",
+    "why": "The Analyst Agent cross-references news against a vector memory. This week you build that memory.",
+    "build": "Chat With Your News Archive — embed headlines into ChromaDB, ask questions, get cited answers",
+    "hard_part": "Week 5 is the first real difficulty spike. Embeddings are abstract. Take it one subtopic at a time.",
+    "time": "~5 Pomodoros (harder week — plan extra time)",
+    "cert_track": "LangChain Academy Certification"
+  },
+  "week_6": {
+    "what": "LangGraph — wiring AI agents together as a state machine",
+    "why": "Every agent in the War Room is a LangGraph graph. This week you build your first one.",
+    "build": "3-node Research Assistant: Classify → RAG Search → Summarize, with LangSmith tracing",
+    "hard_part": "State machines are a new mental model. The concept clicks when you draw the flow chart first.",
+    "time": "~5 Pomodoros (harder week — plan extra time)",
+    "cert_track": "LangChain Academy Certification"
+  },
+  "week_7": {
+    "what": "LangSmith — seeing inside your agent's brain (tracing, cost, debugging)",
+    "why": "You can't fix what you can't see. LangSmith makes every agent decision visible.",
+    "build": "Fully instrumented agent with @traceable, cost-per-query calculator from trace data",
+    "hard_part": "Getting the LANGCHAIN_API_KEY set up. Takes 5 minutes but feels confusing the first time.",
+    "time": "~3 Pomodoros",
+    "cert_track": "LangChain Academy Certification"
+  },
+  "week_8": {
+    "what": "MCP — a standard protocol for giving AI agents access to tools",
+    "why": "The Journalist Agent fetches news through an MCP server. This week you build that server.",
+    "build": "News Feed MCP Server — expose get_headlines() and get_article() as MCP tools",
+    "hard_part": "The Host→Client→Server mental model. Draw it on paper. It's not as complex as it sounds.",
+    "time": "~4 Pomodoros",
+    "cert_track": "LangChain Academy Certification"
+  },
+  "week_9": {
+    "what": "Multi-agent systems — two AI models working together on a shared task",
+    "why": "The War Room uses Gemini to gather news and Claude to analyse it. This week you wire them together.",
+    "build": "Journalist (Gemini) + Analyst (Claude) pipeline — topic → brief → confidence-scored assessment",
+    "hard_part": "Routing between two different model APIs. Keep the interfaces simple.",
+    "time": "~5 Pomodoros",
+    "cert_track": "AI-103 / Google Cloud ML Engineer"
+  },
+  "week_10": {
+    "what": "Autonomous agents — the system runs without you, alerts you when something matters",
+    "why": "The Watcher monitors the world 24/7. The Overseer decides if you need to know.",
+    "build": "Watcher + Overseer agents — timer-based monitoring, threshold alerts, human approval gates",
+    "hard_part": "Autonomous loops that don't spin out of control. Add a clear termination condition to every loop.",
+    "time": "~5 Pomodoros",
+    "cert_track": "AI-103 / Google Cloud ML Engineer"
+  },
+  "week_11": {
+    "what": "A real dashboard — your War Room as a visual interface you can actually use",
+    "why": "All 4 agents running behind one button. This is where the project becomes a product.",
+    "build": "Streamlit dashboard — alert feed, Situation Report button, cost tracker, eval suite",
+    "hard_part": "Real-time feeds in Streamlit need st.empty() + a loop. A bit fiddly but powerful.",
+    "time": "~4 Pomodoros",
+    "cert_track": "AI-103 / Google Cloud ML Engineer"
+  },
+  "week_12": {
+    "what": "Ship it — turn your project into a portfolio piece the world can see",
+    "why": "The War Room is impressive. A well-documented GitHub repo + a 3-min demo video makes it undeniable.",
+    "build": "Architecture diagram, professional README, demo video, LinkedIn update, case study post",
+    "hard_part": "Writing about your own work is harder than writing the code. Start with bullet points.",
+    "time": "~4 Pomodoros",
+    "cert_track": "AI-103 / Google Cloud ML Engineer"
+  }
+}

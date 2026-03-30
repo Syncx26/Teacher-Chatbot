@@ -1,0 +1,154 @@
+{
+  "topics": [
+    {
+      "topic_id": "python_dicts",
+      "label": "Python Dictionaries",
+      "week": 1,
+      "prerequisites": [],
+      "subtopics": [
+        {"id": "dict_basics", "label": "What is a dictionary?", "minutes": 15},
+        {"id": "dict_access", "label": "Accessing and updating values", "minutes": 10},
+        {"id": "dict_nesting", "label": "Nested dictionaries", "minutes": 20}
+      ]
+    },
+    {
+      "topic_id": "json_module",
+      "label": "JSON & File I/O",
+      "week": 1,
+      "prerequisites": ["python_dicts"],
+      "subtopics": [
+        {"id": "json_what", "label": "What is JSON?", "minutes": 10},
+        {"id": "json_read", "label": "Reading JSON files", "minutes": 15},
+        {"id": "json_write", "label": "Writing JSON files", "minutes": 15}
+      ]
+    },
+    {
+      "topic_id": "rest_apis",
+      "label": "REST APIs & HTTP",
+      "week": 2,
+      "prerequisites": ["python_dicts", "json_module"],
+      "subtopics": [
+        {"id": "what_is_api", "label": "What is an API?", "minutes": 15},
+        {"id": "http_methods", "label": "GET vs POST requests", "minutes": 15},
+        {"id": "requests_lib", "label": "Using the requests library", "minutes": 20},
+        {"id": "api_keys_env", "label": "API keys and .env files", "minutes": 15}
+      ]
+    },
+    {
+      "topic_id": "sqlite_basics",
+      "label": "SQLite & SQL Basics",
+      "week": 3,
+      "prerequisites": ["python_dicts", "json_module"],
+      "subtopics": [
+        {"id": "db_vs_files", "label": "Databases vs files — why bother?", "minutes": 15},
+        {"id": "sql_create", "label": "CREATE TABLE and INSERT", "minutes": 20},
+        {"id": "sql_select", "label": "SELECT and WHERE queries", "minutes": 20},
+        {"id": "sqlite3_python", "label": "sqlite3 module in Python", "minutes": 25}
+      ]
+    },
+    {
+      "topic_id": "llm_api_basics",
+      "label": "LLM APIs & Anthropic SDK",
+      "week": 4,
+      "prerequisites": ["rest_apis", "sqlite_basics"],
+      "subtopics": [
+        {"id": "what_are_llms", "label": "What are LLMs? (plain English)", "minutes": 15},
+        {"id": "messages_array", "label": "The messages array pattern", "minutes": 20},
+        {"id": "system_prompts", "label": "System prompts and temperature", "minutes": 15},
+        {"id": "tokens_cost", "label": "Tokens and cost calculation", "minutes": 15},
+        {"id": "anthropic_sdk", "label": "First call with Anthropic SDK", "minutes": 25}
+      ]
+    },
+    {
+      "topic_id": "rag_concept",
+      "label": "RAG (Retrieval-Augmented Generation)",
+      "week": 5,
+      "prerequisites": ["sqlite_basics", "llm_api_basics"],
+      "subtopics": [
+        {"id": "what_is_rag", "label": "What is RAG? (open-book test analogy)", "minutes": 15},
+        {"id": "embeddings", "label": "What are embeddings?", "minutes": 20},
+        {"id": "chunking", "label": "Chunking text for retrieval", "minutes": 15},
+        {"id": "vector_search", "label": "How vector search works", "minutes": 20},
+        {"id": "chromadb_setup", "label": "Setting up ChromaDB", "minutes": 25}
+      ]
+    },
+    {
+      "topic_id": "langgraph_basics",
+      "label": "LangGraph Fundamentals",
+      "week": 6,
+      "prerequisites": ["rag_concept", "llm_api_basics"],
+      "subtopics": [
+        {"id": "state_machines", "label": "What is a state machine?", "minutes": 15},
+        {"id": "stategraph", "label": "StateGraph, nodes and edges", "minutes": 25},
+        {"id": "conditional_edges", "label": "Conditional edges — routing logic", "minutes": 20},
+        {"id": "sqlite_saver", "label": "SqliteSaver checkpointing", "minutes": 20}
+      ]
+    },
+    {
+      "topic_id": "langsmith",
+      "label": "LangSmith Observability",
+      "week": 7,
+      "prerequisites": ["langgraph_basics"],
+      "subtopics": [
+        {"id": "trace_trees", "label": "Reading trace trees", "minutes": 15},
+        {"id": "traceable_decorator", "label": "@traceable decorator", "minutes": 20},
+        {"id": "cost_tracking", "label": "Cost tracking per query", "minutes": 20}
+      ]
+    },
+    {
+      "topic_id": "mcp_protocol",
+      "label": "MCP (Model Context Protocol)",
+      "week": 8,
+      "prerequisites": ["langgraph_basics"],
+      "subtopics": [
+        {"id": "mcp_architecture", "label": "MCP: Host → Client → Server", "minutes": 20},
+        {"id": "fastmcp_python", "label": "Building a server with FastMCP", "minutes": 25},
+        {"id": "mcp_tools", "label": "Exposing tools via MCP", "minutes": 25}
+      ]
+    },
+    {
+      "topic_id": "multi_agent",
+      "label": "Multi-Agent Architecture",
+      "week": 9,
+      "prerequisites": ["langgraph_basics", "mcp_protocol"],
+      "subtopics": [
+        {"id": "agent_roles", "label": "Journalist vs Analyst agent design", "minutes": 20},
+        {"id": "subgraphs", "label": "LangGraph subgraphs", "minutes": 25},
+        {"id": "multi_model_routing", "label": "Routing between Gemini and Claude", "minutes": 25}
+      ]
+    },
+    {
+      "topic_id": "autonomous_loops",
+      "label": "Autonomous Loops & Human-in-the-Loop",
+      "week": 10,
+      "prerequisites": ["multi_agent"],
+      "subtopics": [
+        {"id": "watcher_agent", "label": "Building the Watcher agent", "minutes": 25},
+        {"id": "threshold_alerts", "label": "Threshold alerting logic", "minutes": 20},
+        {"id": "human_approval", "label": "Human-in-the-loop approval gates", "minutes": 25}
+      ]
+    },
+    {
+      "topic_id": "dashboard_eval",
+      "label": "Streamlit Dashboard & Eval Suite",
+      "week": 11,
+      "prerequisites": ["autonomous_loops"],
+      "subtopics": [
+        {"id": "streamlit_basics", "label": "Streamlit basics in 25 min", "minutes": 25},
+        {"id": "realtime_feeds", "label": "Real-time alert feed", "minutes": 20},
+        {"id": "langsmith_evals", "label": "LangSmith evaluation suite", "minutes": 25}
+      ]
+    },
+    {
+      "topic_id": "portfolio_ship",
+      "label": "Portfolio & Ship",
+      "week": 12,
+      "prerequisites": ["dashboard_eval"],
+      "subtopics": [
+        {"id": "arch_diagram", "label": "Architecture diagram with draw.io", "minutes": 20},
+        {"id": "github_readme", "label": "Professional GitHub README", "minutes": 25},
+        {"id": "demo_video", "label": "Recording your 3-min demo", "minutes": 25}
+      ]
+    }
+  ]
+}
