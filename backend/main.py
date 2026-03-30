@@ -45,9 +45,14 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Synapse War Room API", version="1.0.0", lifespan=lifespan)
 
+# CORS: allow localhost for dev + any Railway/custom frontend URL from env
+_raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:3001")
+_allowed_origins = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],
+    allow_origins=_allowed_origins,
+    allow_origin_regex=r"https://.*\.railway\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
