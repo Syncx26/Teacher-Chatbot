@@ -29,97 +29,104 @@ export default function GatewayPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#0a0e1a] text-white flex flex-col items-center justify-center px-4 grid-bg">
-      {/* Animated background glow */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-3xl" />
-      </div>
+    <main className="min-h-screen cyber-bg relative overflow-hidden flex flex-col items-center justify-center px-6">
+      {/* High-Contrast Mesh Background */}
+      <div className="absolute inset-0 cyber-grid pointer-events-none opacity-40" />
+      <div className="prism-orb top-[-10%] right-[-10%]" />
+      <div className="prism-orb bottom-[-10%] left-[-10%] opacity-20" />
 
-      <div className="relative z-10 w-full max-w-2xl mx-auto text-center">
-        {/* Title */}
+      <div className="relative z-10 w-full max-w-4xl mx-auto flex flex-col items-center">
+        {/* Branding Section */}
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          className="text-center mb-10"
         >
-          <p className="text-xs tracking-[0.4em] uppercase text-blue-400 mb-4">AI Curriculum Tutor</p>
-          <h1 className="text-4xl sm:text-6xl font-bold tracking-widest uppercase mb-2">
-            <span className="text-white">SYNAPSE</span>
+          <div className="inline-flex items-center gap-2 mb-8 px-4 py-1.5 rounded-full glass-panel-prism text-[10px] sm:text-xs font-mono tracking-[0.3em] uppercase text-primary border border-primary/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+            Neural Link: Active
+          </div>
+          
+          <h1 className="text-6xl sm:text-8xl font-black tracking-tighter mb-4 leading-none text-white italic">
+            SYNAPSE
           </h1>
-          <h2 className="text-2xl sm:text-4xl font-light tracking-[0.3em] uppercase text-blue-400 mb-8">
-            WAR ROOM
-          </h2>
-          <p className="text-gray-400 text-sm sm:text-base mb-10 max-w-md mx-auto leading-relaxed">
-            Your personal AI tutor for the 12-week journey to building a multi-agent geopolitical intelligence system.
+          
+          <div className="flex items-center justify-center gap-4 mb-8">
+            <h2 className="text-xl sm:text-2xl font-light tracking-[0.5em] uppercase text-gray-400">
+               Chat · Code · Research
+            </h2>
+          </div>
+
+          <p className="max-w-xl mx-auto text-gray-500 text-sm sm:text-base leading-relaxed font-light italic">
+            Deep dive into the neural curriculum. Master the 12-week roadmap.
           </p>
         </motion.div>
 
-        {/* Prompt input */}
-        <motion.form
-          onSubmit={handleSubmit}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="relative mb-12"
-        >
-          <div className="relative">
-            <input
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="What shall we build today?"
-              className="w-full bg-white/5 border border-blue-500/30 rounded-2xl px-6 py-4 text-white placeholder-gray-500 text-sm sm:text-base focus:outline-none focus:border-blue-500 transition-all duration-300"
-              style={{ boxShadow: "0 0 30px rgba(59, 130, 246, 0.1)" }}
-            />
-            <button
-              type="submit"
-              className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm transition-colors"
-            >
-              Enter →
-            </button>
-          </div>
-        </motion.form>
-
-        {/* 12-week roadmap */}
+        {/* Global Command Bar */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-2xl mb-16"
         >
-          <p className="text-xs tracking-widest uppercase text-gray-500 mb-4">12-Week AI Architect Journey</p>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+          <form onSubmit={handleSubmit} className="relative group">
+            <div className="absolute inset-0 bg-primary/20 rounded-2xl blur-3xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
+            <div className="relative glass-panel-prism rounded-2xl p-1 flex items-center gap-1">
+              <input
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="Initialize session..."
+                className="flex-1 bg-transparent border-none px-6 py-4 text-white placeholder-gray-600 focus:outline-none text-base sm:text-lg font-light"
+              />
+              <button
+                type="submit"
+                className="bg-primary text-black px-8 py-4 rounded-xl font-black text-xs tracking-widest uppercase hover:bg-white transition-all duration-300 active:scale-95"
+              >
+                Launch
+              </button>
+            </div>
+          </form>
+        </motion.div>
+
+        {/* Roadmap Grid */}
+        <div className="w-full mb-12">
+          <div className="flex items-center justify-between mb-6 px-2">
+            <p className="text-[10px] uppercase tracking-widest text-gray-500 font-mono">12-Week Roadmap</p>
+            <div className="h-[1px] flex-1 mx-4 bg-white/5" />
+          </div>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3 sm:gap-4">
             {WEEK_TOPICS.map(({ week, name }, i) => (
               <motion.button
                 key={week}
                 onClick={() => router.push("/tutor")}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.4 + i * 0.04 }}
-                whileHover={{ scale: 1.05 }}
-                className="p-2 rounded-xl bg-white/5 border border-white/10 hover:border-blue-500/40 hover:bg-blue-500/10 transition-all cursor-pointer text-center group"
+                whileHover={{ y: -5, scale: 1.02 }}
+                className="group relative glass-panel-prism rounded-xl p-4 text-left overflow-hidden border-white/5 hover:border-primary/40 transition-all duration-300"
               >
-                <div className="text-xs text-gray-500 group-hover:text-blue-400 transition-colors">W{week}</div>
-                <div className="text-xs text-gray-300 group-hover:text-white transition-colors mt-0.5 leading-tight">{name}</div>
+                <div className="text-[9px] font-mono text-primary/50 uppercase tracking-tighter mb-1">Week 0{week}</div>
+                <div className="text-xs font-bold text-white group-hover:text-primary transition-colors leading-tight uppercase">
+                  {name}
+                </div>
+                <div className="absolute bottom-0 left-0 h-[2px] w-0 bg-primary group-hover:w-full transition-all duration-500" />
               </motion.button>
             ))}
           </div>
-        </motion.div>
+        </div>
 
-        {/* CTA */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.9 }}
-          className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3"
-        >
-          <button onClick={() => router.push("/tutor")}
-            className="w-full sm:w-auto px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium transition-colors">
-            Start Learning →
+        {/* Core Actions */}
+        <div className="flex gap-4">
+          <button 
+            onClick={() => router.push("/tutor")}
+            className="px-12 py-4 bg-white text-black font-black uppercase tracking-widest text-xs rounded-xl hover:bg-primary transition-all duration-300 shadow-xl"
+          >
+            Start Chat
           </button>
-          <button onClick={() => router.push("/research")}
-            className="w-full sm:w-auto px-8 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white rounded-xl font-medium transition-colors">
-            Research Hub 📄
+          <button 
+            onClick={() => router.push("/research")}
+            className="px-12 py-4 glass-panel-prism text-white font-black uppercase tracking-widest text-xs rounded-xl hover:bg-white/5 transition-all duration-300 border-white/10"
+          >
+            Research
           </button>
-        </motion.div>
+        </div>
       </div>
     </main>
   );

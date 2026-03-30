@@ -1,0 +1,17 @@
+{
+  "name": "Synapse War Room",
+  "short_name": "Synapse",
+  "description": "Your AI curriculum tutor and research hub.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#010101",
+  "theme_color": "#010101",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
