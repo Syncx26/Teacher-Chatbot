@@ -95,13 +95,12 @@ const WEEK_RESOURCES: Record<number, { label: string; url: string; type?: string
 export default function TutorPage() {
   const {
     userId, currentWeek, xp, completedWeeks, messages,
-    topics, activeTab, setProgress, addMessage, setTopics, setActiveTab,
+    topics, activeTab, pendingMessage, setProgress, addMessage, setTopics, setActiveTab, setPendingMessage,
   } = useAppStore();
 
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [postCheck, setPostCheck] = useState<any>({});
-  const [autoSend, setAutoSend] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Find More Resources
@@ -125,24 +124,14 @@ export default function TutorPage() {
     getTopics(userId).then((ts) => setTopics(ts.map((t) => ({ ...t, label: t.label ?? t.name })))).catch(console.error);
   }, [userId, setProgress, setTopics]);
 
-  // Read query param on mount and queue auto-send
+  // Auto-send any message queued from the home page
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const q = params.get("q");
-    if (q) {
-      setAutoSend(decodeURIComponent(q));
-      window.history.replaceState({}, "", "/tutor");
-    }
-  }, []);
-
-  // Trigger auto-send once userId is ready
-  useEffect(() => {
-    if (!autoSend || !userId || loading) return;
-    const msg = autoSend;
-    setAutoSend(null);
+    if (!pendingMessage || !userId) return;
+    const msg = pendingMessage;
+    setPendingMessage("");
     handleSend(msg);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoSend, userId]);
+  }, [pendingMessage, userId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

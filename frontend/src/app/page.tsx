@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { useAppStore } from "@/lib/store";
 
 const WEEK_TOPICS = [
   { week: 1, name: "Python & JSON" },
@@ -22,14 +23,14 @@ const WEEK_TOPICS = [
 export default function GatewayPage() {
   const [prompt, setPrompt] = useState("");
   const router = useRouter();
+  const setPendingMessage = useAppStore((s) => s.setPendingMessage);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (prompt.trim()) {
-      router.push(`/tutor?q=${encodeURIComponent(prompt.trim())}`);
-    } else {
-      router.push("/tutor");
+      setPendingMessage(prompt.trim());
     }
+    router.push("/tutor");
   }
 
   return (

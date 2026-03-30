@@ -42,6 +42,7 @@ interface AppStore {
   isSidebarOpen: boolean;
   pomodoroActive: boolean;
   pomodoroSeconds: number;
+  pendingMessage: string;
 
   setProgress: (p: { current_week?: number; xp?: number; completed_weeks?: number[] }) => void;
   addMessage: (m: Message) => void;
@@ -53,6 +54,7 @@ interface AppStore {
   stopPomodoro: () => void;
   tickPomodoro: () => void;
   resetPomodoro: () => void;
+  setPendingMessage: (msg: string) => void;
 }
 
 function generateUUID(): string {
@@ -84,6 +86,7 @@ export const useAppStore = create<AppStore>((set) => ({
   isSidebarOpen: false,
   pomodoroActive: false,
   pomodoroSeconds: 1500,
+  pendingMessage: "",
 
   setProgress: (p) =>
     set((state) => ({
@@ -100,6 +103,8 @@ export const useAppStore = create<AppStore>((set) => ({
   setPapers: (p) => set({ papers: p }),
 
   setActiveTab: (tab) => set({ activeTab: tab }),
+
+  setPendingMessage: (msg) => set({ pendingMessage: msg }),
 
   toggleSidebar: () =>
     set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
