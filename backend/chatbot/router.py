@@ -145,8 +145,8 @@ def classify_request(message: str, progress: dict) -> str:
     # ------------------------------------------------------------------
     # HAIKU — simple admin / progress queries, very short messages
     # ------------------------------------------------------------------
-    # Case 1: Very short message with no code indicators
-    if word_count <= 8 and not has_code:
+    # Case 1: Very short message with no code indicators — only pure admin one-liners
+    if word_count <= 4 and not has_code:
         return "haiku"
 
     # Case 2: Progress / admin intent phrases
@@ -158,7 +158,7 @@ def classify_request(message: str, progress: dict) -> str:
     # ------------------------------------------------------------------
 
     # Case 2: Short message with no code/error indicators
-    if word_count <= 15 and not has_code:
+    if word_count <= 8 and not has_code:
         return "gemini_flash"
 
     # ------------------------------------------------------------------

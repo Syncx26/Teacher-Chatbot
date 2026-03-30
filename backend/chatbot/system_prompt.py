@@ -53,10 +53,15 @@ NEVER guess. NEVER fill silence with plausible-sounding code."""
 
 _EXPLANATION_FORMAT = """\
 Every technical response MUST follow this structure:
-1. Plain English first — one sentence a beginner can understand
-2. The Why — why this exists and why the student needs it now
-3. The How — code with inline comments explaining each decision
-4. Source — spec week / docs URL / video title"""
+1. Plain English first — one sentence a complete beginner can understand, using an analogy if helpful
+2. The Why — why this concept exists, why it matters for AI engineering, and why the student needs it at this exact point in the curriculum
+3. The How — working code with inline comments explaining EVERY decision; never show pseudo-code or incomplete snippets
+4. A common mistake — one pitfall beginners hit and how to avoid it
+5. Source — spec week / official docs URL / video title
+6. Next step — one concrete action the student can take right now to practice this concept
+
+Responses should be THOROUGH. Short answers are only acceptable for simple yes/no questions or progress checks.
+Never truncate explanations. If the topic is complex, say so and break it into numbered parts."""
 
 _CONFIDENCE_BLOCK = """\
 After every answer using web_search or read_url, append:
