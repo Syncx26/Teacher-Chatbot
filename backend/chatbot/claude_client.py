@@ -1,22 +1,46 @@
+"""
+claude_client.py
+Dispatches chat requests to the correct model based on the tier returned
+by the router.
+
+Tier → Provider mapping:
+  admin              → Claude Haiku      (Anthropic SDK, no tools)
+  free_llama         → Llama 3.3 70B     (OpenRouter, free)
+  free_gemma         → Gemma 3 27B       (OpenRouter, free)
+  budget_flash_lite  → Gemini Flash Lite (OpenRouter, ~$0.25/M input)
+  premium_sonnet     → Claude Sonnet 4.6 (Anthropic SDK, tools + optional thinking)
+
+OpenRouter uses the OpenAI-compatible endpoint; we call it via httpx.
+"""
+
+from __future__ import annotations
+
 import asyncio
 import json
 import re
+from typing import Any
 
 import anthropic
 import google.generativeai as genai
+import httpx
 
 from config import (
     ANTHROPIC_API_KEY,
     GOOGLE_API_KEY,
+    OPENROUTER_API_KEY,
+    OPENROUTER_BASE_URL,
     MODEL_HAIKU,
     MODEL_SONNET,
     MODEL_GEMINI,
+    MODEL_LLAMA_FREE,
+    MODEL_GEMMA_FREE,
+    MODEL_FLASH_LITE,
     MAX_TOKENS,
 )
 from chatbot.tools import TOOL_DEFINITIONS, dispatch_tool
 
 # ---------------------------------------------------------------------------
-# Module-level client initialisation
+# Client initialisation
 # ---------------------------------------------------------------------------
 
 _anthropic = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
@@ -24,30 +48,22 @@ genai.configure(api_key=GOOGLE_API_KEY)
 
 
 # ---------------------------------------------------------------------------
-# Confidence-block parser
+# Confidence-block parser  (unchanged)
 # ---------------------------------------------------------------------------
 
 def _parse_confidence(text: str) -> tuple[str, int | None, str | None]:
-    """
-    Extract an optional <confidence>...</confidence> block from text.
-
-    Returns:
-        (cleaned_text, score_int_or_None, raw_json_block_or_None)
-    """
     pattern = re.compile(r"<confidence>(.*?)</confidence>", re.DOTALL | re.IGNORECASE)
     match = pattern.search(text)
     if not match:
         return text, None, None
 
-    raw_block = match.group(0)          # full <confidence>…</confidence>
-    inner = match.group(1).strip()      # content inside the tags
+    raw_block = match.group(0)
+    inner = match.group(1).strip()
 
-    # Try to parse inner as JSON to extract a numeric score
     score: int | None = None
     try:
         parsed = json.loads(inner)
         if isinstance(parsed, dict):
-            # Accept common key names
             for key in ("score", "confidence", "confidence_score", "value"):
                 if key in parsed:
                     score = int(parsed[key])
@@ -55,18 +71,59 @@ def _parse_confidence(text: str) -> tuple[str, int | None, str | None]:
         elif isinstance(parsed, (int, float)):
             score = int(parsed)
     except (json.JSONDecodeError, ValueError, TypeError):
-        # Fall back: look for any integer in the inner text
         num_match = re.search(r"\d+", inner)
         if num_match:
             score = int(num_match.group())
 
-    # Strip the block from the returned content
     cleaned = pattern.sub("", text).strip()
     return cleaned, score, raw_block
 
 
 # ---------------------------------------------------------------------------
-# Anthropic tool-use loop helper
+# OpenRouter helper  (OpenAI-compatible REST call via httpx)
+# ---------------------------------------------------------------------------
+
+async def _call_openrouter(model: str, system_prompt: str, messages: list[dict]) -> str:
+    """
+    Call an OpenRouter model using the OpenAI-compatible chat completions API.
+    Falls back to Gemini (direct SDK) if OPENROUTER_API_KEY is not set.
+    """
+    if not OPENROUTER_API_KEY:
+        # Graceful degradation: use Gemini direct when no OpenRouter key
+        gemini_model = genai.GenerativeModel(MODEL_GEMINI)
+        full_prompt = f"{system_prompt}\n\n"
+        for m in messages:
+            role = "User" if m["role"] == "user" else "Assistant"
+            full_prompt += f"{role}: {m['content']}\n"
+        response = await asyncio.get_event_loop().run_in_executor(
+            None, lambda: gemini_model.generate_content(full_prompt)
+        )
+        return response.text
+
+    payload: dict[str, Any] = {
+        "model": model,
+        "messages": [{"role": "system", "content": system_prompt}] + messages,
+        "max_tokens": MAX_TOKENS,
+        "temperature": 0.7,
+    }
+
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://github.com/Syncx26/Teacher-Chatbot",
+        "X-Title": "Synapse War Room",
+    }
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        resp = await client.post(OPENROUTER_BASE_URL, json=payload, headers=headers)
+        resp.raise_for_status()
+        data = resp.json()
+
+    return data["choices"][0]["message"]["content"]
+
+
+# ---------------------------------------------------------------------------
+# Anthropic tool-use loop  (unchanged from original)
 # ---------------------------------------------------------------------------
 
 async def _run_tool_loop(
@@ -76,10 +133,6 @@ async def _run_tool_loop(
     use_tools: bool,
     use_thinking: bool,
 ) -> str:
-    """
-    Call the Anthropic API, handle tool-use turns, and return the final
-    assistant text content.
-    """
     kwargs: dict = {
         "model": model,
         "max_tokens": MAX_TOKENS,
@@ -94,8 +147,6 @@ async def _run_tool_loop(
         kwargs["betas"] = ["interleaved-thinking-2025-05-14"]
         kwargs["thinking"] = {"type": "enabled", "budget_tokens": 8000}
 
-    # Run the (synchronous) Anthropic SDK call in a thread so it doesn't
-    # block the event loop.
     response = await asyncio.get_event_loop().run_in_executor(
         None,
         lambda: (
@@ -105,15 +156,10 @@ async def _run_tool_loop(
         ),
     )
 
-    # Tool-use dispatch loop
     while response.stop_reason == "tool_use":
-        # Collect all tool_use blocks from the response
         tool_use_blocks = [b for b in response.content if b.type == "tool_use"]
-
-        # Append the assistant turn with all its content blocks
         messages = messages + [{"role": "assistant", "content": response.content}]
 
-        # Build tool_result content for every tool call
         tool_results = []
         for tool_block in tool_use_blocks:
             result_str = await dispatch_tool(tool_block.name, tool_block.input)
@@ -123,9 +169,7 @@ async def _run_tool_loop(
                 "content": result_str,
             })
 
-        # Append a single user message with all tool results
         messages = messages + [{"role": "user", "content": tool_results}]
-
         kwargs["messages"] = messages
 
         response = await asyncio.get_event_loop().run_in_executor(
@@ -137,11 +181,7 @@ async def _run_tool_loop(
             ),
         )
 
-    # Extract final text content from the response
-    text_parts = []
-    for block in response.content:
-        if hasattr(block, "text"):
-            text_parts.append(block.text)
+    text_parts = [block.text for block in response.content if hasattr(block, "text")]
     return "\n".join(text_parts)
 
 
@@ -156,85 +196,83 @@ async def chat(
     history: list[dict],
 ) -> dict:
     """
-    Route a chat request to the appropriate model tier and return a
-    standardised response dict.
+    Route a chat request to the appropriate model and return a standardised dict.
 
     Args:
-        user_message:  The latest message from the user.
-        system_prompt: The system prompt to use for this conversation.
-        model_tier:    One of "haiku", "sonnet", or "gemini_flash".
-        history:       Previous conversation turns as a list of
-                       {"role": "user"|"assistant", "content": str} dicts.
+        user_message  : latest message from the user
+        system_prompt : fully-built system prompt (includes task-type template)
+        model_tier    : tier key from router.classify_request()["tier"]
+        history       : previous turns as list of {"role", "content"} dicts
 
     Returns:
         {
-            "content": str,
-            "model_tier": str,
+            "content":          str,
+            "model_tier":       str,
             "confidence_score": int | None,
-            "confidence_json": str | None,
+            "confidence_json":  str | None,
         }
     """
     tier = model_tier.lower()
 
-    # ------------------------------------------------------------------
-    # Gemini Flash path
-    # ------------------------------------------------------------------
-    if tier == "gemini_flash":
-        gemini_model = genai.GenerativeModel(MODEL_GEMINI)
-        prompt = f"{system_prompt}\n\nUser: {user_message}"
-        gemini_response = await asyncio.get_event_loop().run_in_executor(
-            None,
-            lambda: gemini_model.generate_content(prompt),
-        )
-        raw_text = gemini_response.text
-        cleaned, score, conf_json = _parse_confidence(raw_text)
-        return {
-            "content": cleaned,
-            "model_tier": tier,
-            "confidence_score": score,
-            "confidence_json": conf_json,
-        }
-
-    # ------------------------------------------------------------------
-    # Anthropic paths (haiku / sonnet / sonnet_thinking)
-    # ------------------------------------------------------------------
-
-    # Build messages list from history + new user message
-    messages: list[dict] = []
-    for turn in history:
-        messages.append({"role": turn["role"], "content": turn["content"]})
+    # Build conversation messages for OpenRouter / Anthropic
+    messages: list[dict] = [
+        {"role": t["role"], "content": t["content"]} for t in history
+    ]
     messages.append({"role": "user", "content": user_message})
 
-    if tier == "haiku":
-        model = MODEL_HAIKU
-        use_tools = False
-        use_thinking = False
-    elif tier == "sonnet":
-        model = MODEL_SONNET
-        use_tools = True
-        use_thinking = False
-    elif tier in ("sonnet_thinking", "sonnet-thinking"):
-        model = MODEL_SONNET
-        use_tools = True
-        use_thinking = True
-    else:
-        # Default fallback: treat unknown tiers as haiku (safe, cheap)
-        model = MODEL_HAIKU
-        use_tools = False
-        use_thinking = False
+    # ------------------------------------------------------------------
+    # FREE TIER — Llama 3.3 70B  (OpenRouter free)
+    # ------------------------------------------------------------------
+    if tier == "free_llama":
+        raw_text = await _call_openrouter(MODEL_LLAMA_FREE, system_prompt, messages)
+        cleaned, score, conf_json = _parse_confidence(raw_text)
+        return {"content": cleaned, "model_tier": tier,
+                "confidence_score": score, "confidence_json": conf_json}
 
+    # ------------------------------------------------------------------
+    # FREE TIER — Gemma 3 27B  (OpenRouter free)
+    # ------------------------------------------------------------------
+    if tier == "free_gemma":
+        raw_text = await _call_openrouter(MODEL_GEMMA_FREE, system_prompt, messages)
+        cleaned, score, conf_json = _parse_confidence(raw_text)
+        return {"content": cleaned, "model_tier": tier,
+                "confidence_score": score, "confidence_json": conf_json}
+
+    # ------------------------------------------------------------------
+    # BUDGET TIER — Gemini Flash Lite  (OpenRouter)
+    # ------------------------------------------------------------------
+    if tier == "budget_flash_lite":
+        raw_text = await _call_openrouter(MODEL_FLASH_LITE, system_prompt, messages)
+        cleaned, score, conf_json = _parse_confidence(raw_text)
+        return {"content": cleaned, "model_tier": tier,
+                "confidence_score": score, "confidence_json": conf_json}
+
+    # ------------------------------------------------------------------
+    # ADMIN — Claude Haiku  (Anthropic, no tools)
+    # ------------------------------------------------------------------
+    if tier == "admin":
+        raw_text = await _run_tool_loop(
+            model=MODEL_HAIKU,
+            system_prompt=system_prompt,
+            messages=messages,
+            use_tools=False,
+            use_thinking=False,
+        )
+        cleaned, score, conf_json = _parse_confidence(raw_text)
+        return {"content": cleaned, "model_tier": tier,
+                "confidence_score": score, "confidence_json": conf_json}
+
+    # ------------------------------------------------------------------
+    # PREMIUM — Claude Sonnet 4.6  (Anthropic, tools + optional thinking)
+    # ------------------------------------------------------------------
+    # Treat "premium_sonnet" and legacy tier names the same
     raw_text = await _run_tool_loop(
-        model=model,
+        model=MODEL_SONNET,
         system_prompt=system_prompt,
         messages=messages,
-        use_tools=use_tools,
-        use_thinking=use_thinking,
+        use_tools=True,
+        use_thinking=False,
     )
-
     cleaned, score, conf_json = _parse_confidence(raw_text)
-    return {
-        "content": cleaned,
-        "model_tier": tier,
-        "confidence_score": score,
-        "confidence_json": conf_json,
-    }
+    return {"content": cleaned, "model_tier": "premium_sonnet",
+            "confidence_score": score, "confidence_json": conf_json}

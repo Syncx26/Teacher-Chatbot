@@ -129,11 +129,13 @@ async def chat_endpoint(req: ChatRequest):
     # Rules engine pre-check (may inject gate/wellbeing prefixes)
     gated_message = pre_check(req.message, progress)
 
-    # Route to correct model tier
-    model_tier = classify_request(req.message, progress)
+    # Route to correct model tier + task type
+    route = classify_request(req.message, progress)
+    model_tier = route["tier"]
+    task_type = route["task_type"]
 
-    # Build fresh system prompt with live progress
-    system_prompt = build_prompt(progress)
+    # Build fresh system prompt with live progress + task-specific teaching mode
+    system_prompt = build_prompt(progress, task_type=task_type)
 
     # Call AI
     result = await chat(gated_message, system_prompt, model_tier, history)
