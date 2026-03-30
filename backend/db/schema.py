@@ -69,4 +69,17 @@ def init_db() -> None:
                 refreshed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 papers_added INTEGER DEFAULT 0
             );
+
+            CREATE TABLE IF NOT EXISTS custom_topics (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                topic_id TEXT NOT NULL,
+                label TEXT NOT NULL,
+                description TEXT DEFAULT '',
+                difficulty TEXT DEFAULT 'intermediate',
+                reason TEXT DEFAULT '',
+                insert_after_week INTEGER DEFAULT 0,
+                subtopics TEXT DEFAULT '[]',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
         """)

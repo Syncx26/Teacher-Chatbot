@@ -165,6 +165,71 @@ export async function chatAboutPaper(
   return res.json();
 }
 
+// ── More Resources ────────────────────────────────────────────────────────────
+
+export interface MoreResource {
+  title: string;
+  url: string;
+  description: string;
+  type: "article" | "video";
+}
+
+export async function getMoreResources(
+  userId: string,
+  topic: string,
+  currentWeek: number
+): Promise<MoreResource[]> {
+  const res = await fetch(`${BASE}/topics/more-resources`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: userId, topic, current_week: currentWeek }),
+  });
+  if (!res.ok) throw new Error(`getMoreResources failed: ${res.status}`);
+  const data = await res.json();
+  return data.resources ?? [];
+}
+
+// ── Custom Topics ─────────────────────────────────────────────────────────────
+
+export interface TopicProposal {
+  topic_name: string;
+  plan: string;
+  subtopics: string[];
+  questions: Array<{
+    id: string;
+    question: string;
+    type: "text" | "choice";
+    options?: string[];
+  }>;
+}
+
+export async function proposeTopic(
+  userId: string,
+  topicName: string
+): Promise<TopicProposal> {
+  const res = await fetch(`${BASE}/topics/propose`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: userId, topic_name: topicName }),
+  });
+  if (!res.ok) throw new Error(`proposeTopic failed: ${res.status}`);
+  return res.json();
+}
+
+export async function confirmTopic(
+  userId: string,
+  topicName: string,
+  answers: Record<string, string>
+): Promise<{ topic_id: string; label: string; insert_after_week: number }> {
+  const res = await fetch(`${BASE}/topics/confirm`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: userId, topic_name: topicName, answers }),
+  });
+  if (!res.ok) throw new Error(`confirmTopic failed: ${res.status}`);
+  return res.json();
+}
+
 export async function getChatHistory(
   userId: string
 ): Promise<{ messages: Array<{ role: string; content: string; timestamp: string }> }> {

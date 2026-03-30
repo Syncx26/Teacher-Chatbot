@@ -25,6 +25,7 @@ from chatbot.rules_engine import pre_check, post_check
 from chatbot.router import classify_request
 from chatbot.claude_client import chat
 from chatbot.prerequisite import get_prerequisite_chain, get_all_topics_with_state
+from db.custom_topics import save_custom_topic, get_custom_topics
 from research.fetcher import get_papers, get_last_refresh_time, is_stale
 from research.summarizer import get_paper_with_summary
 from research.scheduler import start_scheduler, stop_scheduler, trigger_refresh, startup_check
@@ -241,6 +242,172 @@ Student question: {req.message}
     add_xp(req.user_id, 5)
 
     return {"content": content, "model_tier": "sonnet"}
+
+
+# ── More Resources Endpoint ───────────────────────────────────────────────────
+
+class MoreResourcesRequest(BaseModel):
+    user_id: str
+    topic: str       # e.g. "LangGraph Fundamentals"
+    current_week: int
+
+@app.post("/topics/more-resources")
+async def more_resources(req: MoreResourcesRequest):
+    """
+    Search Tavily + YouTube for additional resources on a given topic and return
+    a ranked list of links with titles and descriptions.
+    """
+    from chatbot.tools import search_youtube
+    from tavily import TavilyClient
+    from config import TAVILY_API_KEY
+
+    results: list[dict] = []
+
+    # Tavily web search
+    try:
+        tc = TavilyClient(api_key=TAVILY_API_KEY)
+        query = f"{req.topic} tutorial guide 2024 2025"
+        web_resp = await asyncio.get_event_loop().run_in_executor(
+            None, lambda: tc.search(query, max_results=5, search_depth="basic")
+        )
+        for r in web_resp.get("results", []):
+            results.append({
+                "title": r.get("title", ""),
+                "url": r.get("url", ""),
+                "description": r.get("content", "")[:200],
+                "type": "article",
+            })
+    except Exception as e:
+        pass  # Don't fail the whole request if Tavily is unavailable
+
+    # YouTube search
+    try:
+        yt_raw = await search_youtube(f"{req.topic} tutorial")
+        import json as _json
+        yt_data = _json.loads(yt_raw)
+        if isinstance(yt_data, list):
+            for v in yt_data[:4]:
+                results.append({
+                    "title": v.get("title", ""),
+                    "url": v.get("url", v.get("link", "")),
+                    "description": v.get("description", ""),
+                    "type": "video",
+                })
+    except Exception:
+        pass
+
+    return {"resources": results, "topic": req.topic}
+
+
+# ── Propose + Confirm Custom Topic Endpoints ──────────────────────────────────
+
+class ProposeTopicRequest(BaseModel):
+    user_id: str
+    topic_name: str
+
+class ConfirmTopicRequest(BaseModel):
+    user_id: str
+    topic_name: str
+    answers: dict   # {difficulty, reason, insert_after_week}
+
+@app.post("/topics/propose")
+async def propose_topic(req: ProposeTopicRequest):
+    """
+    Ask Claude to produce a brief plan for adding a custom topic,
+    plus 3 questions the user must answer before it is added.
+    """
+    import anthropic as _anthropic_mod
+    from config import ANTHROPIC_API_KEY, MODEL_SONNET
+
+    client = _anthropic_mod.Anthropic(api_key=ANTHROPIC_API_KEY)
+    progress = get_progress(req.user_id)
+    current_week = progress.get("current_week", 1)
+
+    prompt = f"""A student on Week {current_week} of a 12-week AI engineering curriculum
+wants to add a custom topic: "{req.topic_name}"
+
+Return ONLY valid JSON (no markdown fences) with this exact structure:
+{{
+  "plan": "2-3 sentence description of what this topic covers and how it fits the curriculum",
+  "subtopics": ["subtopic 1", "subtopic 2", "subtopic 3"],
+  "questions": [
+    {{
+      "id": "difficulty",
+      "question": "What's your current level with {req.topic_name}?",
+      "type": "choice",
+      "options": ["Complete beginner", "Some exposure", "Fairly familiar"]
+    }},
+    {{
+      "id": "reason",
+      "question": "Why do you want to add this topic?",
+      "type": "text"
+    }},
+    {{
+      "id": "insert_after_week",
+      "question": "Where in your curriculum should this fit?",
+      "type": "choice",
+      "options": {list(f"After Week {w}" for w in range(1, 13))}
+    }}
+  ]
+}}"""
+
+    response = await asyncio.get_event_loop().run_in_executor(
+        None,
+        lambda: client.messages.create(
+            model=MODEL_SONNET,
+            max_tokens=600,
+            messages=[{"role": "user", "content": prompt}],
+        ),
+    )
+
+    import json as _json
+    raw = response.content[0].text.strip()
+    # Strip markdown fences if model adds them
+    raw = raw.strip("`").lstrip("json").strip()
+    try:
+        data = _json.loads(raw)
+    except Exception:
+        data = {
+            "plan": f"We'll cover {req.topic_name} as a focused module covering core concepts, practical examples, and hands-on exercises.",
+            "subtopics": [f"{req.topic_name} fundamentals", "Practical application", "Integration with the curriculum"],
+            "questions": [
+                {"id": "difficulty", "question": f"What's your current level with {req.topic_name}?",
+                 "type": "choice", "options": ["Complete beginner", "Some exposure", "Fairly familiar"]},
+                {"id": "reason", "question": "Why do you want to add this topic?", "type": "text"},
+                {"id": "insert_after_week", "question": "Where in your curriculum should this fit?",
+                 "type": "choice", "options": [f"After Week {w}" for w in range(1, 13)]},
+            ],
+        }
+
+    return {"topic_name": req.topic_name, **data}
+
+
+@app.post("/topics/confirm")
+async def confirm_topic(req: ConfirmTopicRequest):
+    """Save the confirmed custom topic and return the created topic object."""
+    # Parse insert_after_week from answer like "After Week 3" → 3
+    raw_week = req.answers.get("insert_after_week", "After Week 1")
+    try:
+        week_num = int(str(raw_week).split()[-1])
+    except (ValueError, IndexError):
+        week_num = 1
+
+    topic_data = {
+        "label": req.topic_name,
+        "description": req.answers.get("reason", ""),
+        "difficulty": req.answers.get("difficulty", "intermediate"),
+        "reason": req.answers.get("reason", ""),
+        "insert_after_week": week_num,
+        "subtopics": [],
+    }
+    topic_id = save_custom_topic(req.user_id, topic_data)
+    add_xp(req.user_id, 10)
+    return {"topic_id": topic_id, "label": req.topic_name, "insert_after_week": week_num, "status": "added"}
+
+
+@app.get("/topics/custom/{user_id}")
+def list_custom_topics(user_id: str):
+    return get_custom_topics(user_id)
 
 
 # ── Health ────────────────────────────────────────────────────────────────────

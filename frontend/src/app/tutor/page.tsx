@@ -5,7 +5,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useAppStore, Message } from "@/lib/store";
-import { sendMessage, getProgress, getTopics, advanceWeek } from "@/lib/api";
+import {
+  sendMessage, getProgress, getTopics, advanceWeek,
+  getMoreResources, proposeTopic, confirmTopic,
+  MoreResource, TopicProposal,
+} from "@/lib/api";
 import ConfidenceBadge from "@/components/ConfidenceBadge";
 import ModelBadge from "@/components/ModelBadge";
 import PomodoroTimer from "@/components/PomodoroTimer";
@@ -69,6 +73,63 @@ export default function TutorPage() {
   const [loading, setLoading] = useState(false);
   const [postCheck, setPostCheck] = useState<any>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // ── More Resources state ──────────────────────────────────────────────────
+  const [resourcesOpen, setResourcesOpen] = useState(false);
+  const [moreResources, setMoreResources] = useState<MoreResource[]>([]);
+  const [resourcesLoading, setResourcesLoading] = useState(false);
+
+  async function handleFindMoreResources() {
+    const topicLabel = topics.find((t) => t.week === currentWeek)?.label
+      ?? WEEK_NAMES[currentWeek] ?? `Week ${currentWeek}`;
+    setResourcesOpen(true);
+    setMoreResources([]);
+    setResourcesLoading(true);
+    try {
+      const found = await getMoreResources(userId, topicLabel, currentWeek);
+      setMoreResources(found);
+    } catch { /* silently show empty */ }
+    finally { setResourcesLoading(false); }
+  }
+
+  // ── Add Custom Topic state ────────────────────────────────────────────────
+  type AddStep = "input" | "proposal" | "questions" | "done";
+  const [addOpen, setAddOpen] = useState(false);
+  const [addStep, setAddStep] = useState<AddStep>("input");
+  const [addTopicName, setAddTopicName] = useState("");
+  const [addProposal, setAddProposal] = useState<TopicProposal | null>(null);
+  const [addAnswers, setAddAnswers] = useState<Record<string, string>>({});
+  const [addLoading, setAddLoading] = useState(false);
+  const [addedTopic, setAddedTopic] = useState<string>("");
+
+  function openAddModal() {
+    setAddOpen(true); setAddStep("input");
+    setAddTopicName(""); setAddProposal(null);
+    setAddAnswers({}); setAddedTopic("");
+  }
+
+  async function handlePropose() {
+    if (!addTopicName.trim()) return;
+    setAddLoading(true);
+    setAddStep("proposal");
+    try {
+      const proposal = await proposeTopic(userId, addTopicName.trim());
+      setAddProposal(proposal);
+      setAddStep("questions");
+    } catch { setAddStep("input"); }
+    finally { setAddLoading(false); }
+  }
+
+  async function handleConfirmTopic() {
+    if (!addProposal) return;
+    setAddLoading(true);
+    try {
+      const result = await confirmTopic(userId, addTopicName.trim(), addAnswers);
+      setAddedTopic(result.label);
+      setAddStep("done");
+    } catch { /* show error? */ }
+    finally { setAddLoading(false); }
+  }
 
   // Load progress + topics on mount
   useEffect(() => {
@@ -184,6 +245,14 @@ export default function TutorPage() {
           })}
         </div>
       </div>
+
+      {/* Add Custom Topic button */}
+      <button
+        onClick={openAddModal}
+        className="w-full mt-2 py-2.5 px-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-500/40 text-gray-300 hover:text-purple-300 rounded-xl text-sm transition-all flex items-center justify-center gap-2"
+      >
+        <span>＋</span> Add Custom Topic
+      </button>
     </div>
   );
 
@@ -256,7 +325,15 @@ export default function TutorPage() {
   // ── Resources Panel ─────────────────────────────────────────────────────────
   const ResourcesPanel = (
     <div className="h-full overflow-y-auto p-4 space-y-4">
-      <div className="text-xs text-gray-400 uppercase tracking-widest mb-2">Week {currentWeek} Resources</div>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs text-gray-400 uppercase tracking-widest">Week {currentWeek} Resources</span>
+        <button
+          onClick={handleFindMoreResources}
+          className="text-xs px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30 text-blue-300 rounded-lg transition-colors flex items-center gap-1.5"
+        >
+          <span>🔍</span> Find More
+        </button>
+      </div>
       {weekResources.length > 0 ? (
         <div className="space-y-2">
           {weekResources.map((r, i) => (
@@ -332,6 +409,182 @@ export default function TutorPage() {
           {ResourcesPanel}
         </aside>
       </div>
+
+      {/* ── More Resources Drawer ──────────────────────────────────────────── */}
+      <AnimatePresence>
+        {resourcesOpen && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 z-40 flex justify-end"
+            onClick={() => setResourcesOpen(false)}
+          >
+            <motion.div
+              initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="w-full max-w-sm bg-[#0d1120] border-l border-white/10 h-full overflow-y-auto p-5 flex flex-col gap-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-white uppercase tracking-widest">More Resources</h2>
+                <button onClick={() => setResourcesOpen(false)} className="text-gray-400 hover:text-white text-lg">✕</button>
+              </div>
+              <p className="text-xs text-gray-400">
+                Live-searched resources for <span className="text-blue-300">{topics.find((t) => t.week === currentWeek)?.label ?? WEEK_NAMES[currentWeek]}</span>
+              </p>
+              {resourcesLoading ? (
+                <div className="flex flex-col gap-3 mt-2">
+                  {[1,2,3,4].map((i) => (
+                    <div key={i} className="h-16 bg-white/5 rounded-xl animate-pulse" />
+                  ))}
+                </div>
+              ) : moreResources.length === 0 ? (
+                <p className="text-gray-500 text-sm mt-4">No results found. Try again later.</p>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {moreResources.map((r, i) => (
+                    <a key={i} href={r.url} target="_blank" rel="noopener noreferrer"
+                      className="p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-colors group">
+                      <div className="flex items-start gap-2">
+                        <span className="text-sm mt-0.5">{r.type === "video" ? "▶" : "📄"}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-200 group-hover:text-white font-medium line-clamp-2">{r.title}</p>
+                          {r.description && (
+                            <p className="text-xs text-gray-500 mt-1 line-clamp-2">{r.description}</p>
+                          )}
+                          <span className={`inline-block mt-1.5 text-xs px-2 py-0.5 rounded-full ${
+                            r.type === "video" ? "bg-red-500/20 text-red-300" : "bg-blue-500/20 text-blue-300"
+                          }`}>{r.type}</span>
+                        </div>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Add Custom Topic Modal ─────────────────────────────────────────── */}
+      <AnimatePresence>
+        {addOpen && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
+            onClick={() => setAddOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-md bg-[#0d1120] border border-white/10 rounded-2xl p-6 flex flex-col gap-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Step 1: Enter topic name */}
+              {addStep === "input" && (
+                <>
+                  <h2 className="text-base font-semibold text-white">Add a Custom Topic</h2>
+                  <p className="text-sm text-gray-400">Type a topic you want to learn. We'll generate a short plan and ask you a few quick questions before adding it.</p>
+                  <input
+                    autoFocus
+                    value={addTopicName}
+                    onChange={(e) => setAddTopicName(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handlePropose()}
+                    placeholder="e.g. Prompt Engineering, Async Python, Docker..."
+                    className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-purple-500/50 transition-colors"
+                  />
+                  <div className="flex gap-2 justify-end">
+                    <button onClick={() => setAddOpen(false)} className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors">Cancel</button>
+                    <button onClick={handlePropose} disabled={!addTopicName.trim()}
+                      className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white rounded-xl transition-colors">
+                      Continue →
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* Step 2 loading */}
+              {addStep === "proposal" && addLoading && (
+                <div className="flex flex-col items-center gap-3 py-8">
+                  <div className="flex gap-1">
+                    {[0,1,2].map((i) => (
+                      <motion.div key={i} className="w-2 h-2 bg-purple-400 rounded-full"
+                        animate={{ y: [0, -8, 0] }} transition={{ repeat: Infinity, duration: 0.7, delay: i * 0.15 }} />
+                    ))}
+                  </div>
+                  <p className="text-sm text-gray-400">Building your topic plan...</p>
+                </div>
+              )}
+
+              {/* Step 3: Questions */}
+              {addStep === "questions" && addProposal && (
+                <>
+                  <h2 className="text-base font-semibold text-white">{addProposal.topic_name}</h2>
+                  <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-xl">
+                    <p className="text-sm text-gray-300">{addProposal.plan}</p>
+                    {addProposal.subtopics.length > 0 && (
+                      <ul className="mt-2 space-y-0.5">
+                        {addProposal.subtopics.map((s, i) => (
+                          <li key={i} className="text-xs text-purple-300">• {s}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-4">
+                    {addProposal.questions.map((q) => (
+                      <div key={q.id}>
+                        <p className="text-sm text-gray-200 mb-2">{q.question}</p>
+                        {q.type === "choice" && q.options ? (
+                          <div className="flex flex-wrap gap-2">
+                            {q.options.map((opt) => (
+                              <button key={opt} onClick={() => setAddAnswers((a) => ({ ...a, [q.id]: opt }))}
+                                className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                                  addAnswers[q.id] === opt
+                                    ? "bg-purple-600 border-purple-500 text-white"
+                                    : "bg-white/5 border-white/10 text-gray-400 hover:border-purple-500/40 hover:text-white"
+                                }`}>
+                                {opt}
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <input
+                            value={addAnswers[q.id] ?? ""}
+                            onChange={(e) => setAddAnswers((a) => ({ ...a, [q.id]: e.target.value }))}
+                            placeholder="Type your answer..."
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition-colors"
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-2 justify-end pt-1">
+                    <button onClick={() => setAddOpen(false)} className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors">Cancel</button>
+                    <button
+                      onClick={handleConfirmTopic}
+                      disabled={addLoading || addProposal.questions.some((q) => !addAnswers[q.id])}
+                      className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white rounded-xl transition-colors"
+                    >
+                      {addLoading ? "Adding..." : "Add to Curriculum"}
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* Step 4: Done */}
+              {addStep === "done" && (
+                <div className="flex flex-col items-center gap-4 py-6 text-center">
+                  <div className="text-4xl">🎉</div>
+                  <h2 className="text-base font-semibold text-white">Topic Added!</h2>
+                  <p className="text-sm text-gray-400"><span className="text-purple-300 font-medium">{addedTopic}</span> has been added to your curriculum.</p>
+                  <button onClick={() => setAddOpen(false)}
+                    className="px-6 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-sm transition-colors">
+                    Done
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Mobile bottom nav */}
       <nav className="md:hidden flex border-t border-white/10 flex-shrink-0">
