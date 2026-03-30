@@ -112,12 +112,21 @@ async def _call_openrouter(model: str, system_prompt: str, messages: list[dict])
         "X-Title": "Synapse War Room",
     }
 
-    async with httpx.AsyncClient(timeout=60.0) as client:
-        resp = await client.post(OPENROUTER_BASE_URL, json=payload, headers=headers)
-        resp.raise_for_status()
-        data = resp.json()
-
-    return data["choices"][0]["message"]["content"]
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            resp = await client.post(OPENROUTER_BASE_URL, json=payload, headers=headers)
+            resp.raise_for_status()
+            data = resp.json()
+        return data["choices"][0]["message"]["content"]
+    except (httpx.ProxyError, httpx.ConnectError, httpx.TimeoutException):
+        # Network unreachable (proxy, firewall, outage) — fall back to Haiku
+        return await _run_tool_loop(
+            model=MODEL_HAIKU,
+            system_prompt=system_prompt,
+            messages=messages,
+            use_tools=False,
+            use_thinking=False,
+        )
 
 
 # ---------------------------------------------------------------------------
