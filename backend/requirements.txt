@@ -1,0 +1,15 @@
+anthropic==0.40.0
+google-generativeai==0.8.3
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+python-dotenv==1.0.1
+google-api-python-client==2.154.0
+tavily-python==0.5.0
+httpx==0.27.2
+beautifulsoup4==4.12.3
+# arxiv==2.1.3  # replaced with direct httpx + stdlib XML (feedparser build fails on Python 3.11)
+# semanticscholar==0.8.4  # uncomment when SEMANTIC_SCHOLAR_API_KEY is available
+huggingface-hub==0.26.5
+apscheduler==3.10.4
+python-multipart==0.0.12
+pytest==8.3.4

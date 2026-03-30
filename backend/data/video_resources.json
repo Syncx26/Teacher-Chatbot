@@ -1,0 +1,51 @@
+{
+  "week_1": [
+    {"title": "Corey Schafer — Python Dictionaries", "duration_min": 19, "url": "https://www.youtube.com/watch?v=daefaLgNkw0", "search_query": "Corey Schafer Python Dictionaries tutorial"},
+    {"title": "Corey Schafer — Working with JSON Files", "duration_min": 20, "url": "https://www.youtube.com/watch?v=9N6a-VLBa2I", "search_query": "Corey Schafer Python JSON Files tutorial"},
+    {"title": "Corey Schafer — File Objects in Python", "duration_min": 24, "url": "https://www.youtube.com/watch?v=Uh2ebFW8OYM", "search_query": "Corey Schafer Python File I/O tutorial"}
+  ],
+  "week_2": [
+    {"title": "freeCodeCamp — APIs for Beginners (first 45 min)", "duration_min": 45, "url": "https://www.youtube.com/watch?v=GZvSYJDk-us", "search_query": "freeCodeCamp APIs for Beginners full course"},
+    {"title": "Tech With Tim — Python Requests Tutorial", "duration_min": 22, "url": "https://www.youtube.com/watch?v=tb8gHvYlCFs", "search_query": "Tech With Tim Python requests library tutorial"}
+  ],
+  "week_3": [
+    {"title": "Corey Schafer — SQLite with Python", "duration_min": 30, "url": "https://www.youtube.com/watch?v=pd-0G0MigUA", "search_query": "Corey Schafer Python SQLite tutorial"},
+    {"title": "freeCodeCamp — SQL Tutorial (first 60 min)", "duration_min": 60, "url": "https://www.youtube.com/watch?v=HXV3zeQKqGY", "search_query": "freeCodeCamp SQL full course beginners"}
+  ],
+  "week_4": [
+    {"title": "Anthropic API Quickstart (official docs)", "duration_min": 20, "url": "https://docs.anthropic.com/en/docs/quickstart", "search_query": "Anthropic Claude API Python quickstart tutorial"},
+    {"title": "Python Claude API Tutorial — AI Jason", "duration_min": 18, "url": "https://www.youtube.com/watch?v=QdP9PEHxY3c", "search_query": "Claude API Python tutorial beginners 2024"}
+  ],
+  "week_5": [
+    {"title": "KodeKloud — RAG Crash Course", "duration_min": 59, "url": "https://www.youtube.com/watch?v=T-D1OfcDW1M", "search_query": "KodeKloud RAG Retrieval Augmented Generation crash course"},
+    {"title": "LearnByBuilding — RAG From Scratch", "duration_min": 35, "url": "https://www.youtube.com/watch?v=sVcwVQRHIc8", "search_query": "RAG from scratch Python ChromaDB tutorial"}
+  ],
+  "week_6": [
+    {"title": "LangChain Academy — Intro to LangGraph (free course)", "duration_min": 90, "url": "https://academy.langchain.com/courses/intro-to-langgraph", "search_query": "LangChain Academy LangGraph free course"},
+    {"title": "LangGraph Explained 2025 — Traversy Media", "duration_min": 30, "url": "https://www.youtube.com/watch?v=R8KB-Zcynxc", "search_query": "LangGraph explained tutorial 2025 beginners"}
+  ],
+  "week_7": [
+    {"title": "DigitalOcean — LangSmith Observability Tutorial", "duration_min": 20, "url": "https://www.youtube.com/watch?v=Hab2CV3B3C4", "search_query": "LangSmith observability tutorial Python"},
+    {"title": "Aurelio AI — LangSmith Introduction", "duration_min": 22, "url": "https://www.youtube.com/watch?v=tFXm5ijih98", "search_query": "Aurelio AI LangSmith introduction tutorial"}
+  ],
+  "week_8": [
+    {"title": "MCP Build Server Tutorial (official)", "duration_min": 25, "url": "https://modelcontextprotocol.io/quickstart/server", "search_query": "Model Context Protocol MCP server Python tutorial"},
+    {"title": "MachineLearningMastery — FastMCP Guide", "duration_min": 20, "url": "https://www.youtube.com/watch?v=9tBKD9ZQFHY", "search_query": "FastMCP Python MCP server tutorial"}
+  ],
+  "week_9": [
+    {"title": "Multi-Agent Systems with LangGraph — AssemblyAI", "duration_min": 35, "url": "https://www.youtube.com/watch?v=hvAPnpSfSGo", "search_query": "LangGraph multi-agent systems subgraphs tutorial"},
+    {"title": "Gemini + Claude Multi-Model Routing", "duration_min": 22, "url": "https://www.youtube.com/watch?v=pBBe1pk8hf4", "search_query": "Gemini Claude multi-model routing Python LangGraph"}
+  ],
+  "week_10": [
+    {"title": "Autonomous AI Agents with LangGraph", "duration_min": 40, "url": "https://www.youtube.com/watch?v=ly1uGrAHxaQ", "search_query": "autonomous AI agents LangGraph human in the loop"},
+    {"title": "Human-in-the-Loop with LangGraph — LangChain docs", "duration_min": 20, "url": "https://langchain-ai.github.io/langgraph/concepts/human_in_the_loop/", "search_query": "LangGraph human in the loop tutorial"}
+  ],
+  "week_11": [
+    {"title": "Streamlit in 20 Minutes — Traversy Media", "duration_min": 20, "url": "https://www.youtube.com/watch?v=D0D4Pa22iG0", "search_query": "Streamlit Python tutorial 20 minutes beginners"},
+    {"title": "LangSmith Evaluation Suite — LangChain", "duration_min": 25, "url": "https://www.youtube.com/watch?v=pinBx22A_pI", "search_query": "LangSmith evaluation batch testing tutorial"}
+  ],
+  "week_12": [
+    {"title": "How to Write a Great GitHub README — Traversy Media", "duration_min": 18, "url": "https://www.youtube.com/watch?v=E6NO0rgFub4", "search_query": "how to write professional GitHub README tutorial"},
+    {"title": "How to Make a Demo Video — Loom", "duration_min": 10, "url": "https://www.loom.com/blog/how-to-make-a-demo-video", "search_query": "how to record software demo video Loom screen recording"}
+  ]
+}
