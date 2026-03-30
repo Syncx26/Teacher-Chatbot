@@ -21,7 +21,6 @@ const WEEK_NAMES: Record<number, string> = {
   9: "Multi-Agent", 10: "Autonomous", 11: "Dashboard", 12: "Ship It",
 };
 
-// ─── Resource links per week ──────────────────────────────────────────────────
 const WEEK_RESOURCES: Record<number, { label: string; url: string }[]> = {
   1: [
     { label: "Corey Schafer — Python Dicts (19m)", url: "https://www.youtube.com/watch?v=daefaLgNkw0" },
@@ -43,26 +42,12 @@ const WEEK_RESOURCES: Record<number, { label: string; url: string }[]> = {
     { label: "KodeKloud — RAG Crash Course (59m)", url: "https://www.youtube.com/watch?v=T-D1OfcDW1M" },
     { label: "RAG From Scratch", url: "https://www.youtube.com/watch?v=sVcwVQRHIc8" },
   ],
-  6: [
-    { label: "LangChain Academy — LangGraph", url: "https://academy.langchain.com/courses/intro-to-langgraph" },
-    { label: "LangGraph Explained 2025", url: "https://www.youtube.com/watch?v=R8KB-Zcynxc" },
-  ],
-  7: [
-    { label: "LangSmith Observability Tutorial", url: "https://www.youtube.com/watch?v=Hab2CV3B3C4" },
-    { label: "Aurelio AI — LangSmith Intro", url: "https://www.youtube.com/watch?v=tFXm5ijih98" },
-  ],
-  8: [
-    { label: "MCP Server Tutorial (official)", url: "https://modelcontextprotocol.io/quickstart/server" },
-    { label: "FastMCP Python Guide", url: "https://www.youtube.com/watch?v=9tBKD9ZQFHY" },
-  ],
 };
 
-// ─── Component ────────────────────────────────────────────────────────────────
 export default function TutorPage() {
   const {
     userId, currentWeek, xp, completedWeeks, messages,
-    topics, activeTab, isSidebarOpen,
-    setProgress, addMessage, setTopics, setActiveTab,
+    topics, activeTab, setProgress, addMessage, setTopics, setActiveTab,
   } = useAppStore();
 
   const [input, setInput] = useState("");
@@ -70,14 +55,12 @@ export default function TutorPage() {
   const [postCheck, setPostCheck] = useState<any>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Load progress + topics on mount
   useEffect(() => {
     if (!userId) return;
     getProgress(userId).then(setProgress).catch(console.error);
     getTopics(userId).then((ts) => setTopics(ts.map((t) => ({ ...t, label: t.name })))).catch(console.error);
-  }, [userId]);
+  }, [userId, setProgress, setTopics]);
 
-  // Scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -99,17 +82,10 @@ export default function TutorPage() {
       });
       setPostCheck(res.post_check || {});
     } catch (e) {
-      addMessage({ role: "assistant", content: "Sorry, something went wrong. Please try again.", timestamp: new Date().toISOString() });
+      addMessage({ role: "assistant", content: "Signal lost. Attempt reconnection...", timestamp: new Date().toISOString() });
     } finally {
       setLoading(false);
     }
-  }
-
-  async function handleAdvanceWeek() {
-    await advanceWeek(userId, currentWeek);
-    const p = await getProgress(userId);
-    setProgress(p);
-    setPostCheck({});
   }
 
   const currentTopics = topics.filter((t) => t.week === currentWeek);
@@ -118,67 +94,76 @@ export default function TutorPage() {
 
   // ── Curriculum Panel ────────────────────────────────────────────────────────
   const CurriculumPanel = (
-    <div className="h-full flex flex-col gap-4 p-4 overflow-y-auto">
-      {/* Week badge + XP */}
-      <div className="glass-card p-4 rounded-xl">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs text-gray-400 uppercase tracking-widest">Current Week</span>
-          <span className="text-xs text-blue-400">{xp} XP</span>
+    <div className="h-full flex flex-col gap-6 p-6">
+      <div className="glass-panel-prism p-6 rounded-2xl relative overflow-hidden group">
+        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-30 transition-opacity">
+          <svg className="w-16 h-16 text-primary" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2L1 12h3v9h6v-6h4v6h6v-9h3L12 2z" />
+          </svg>
         </div>
-        <div className="text-4xl font-bold text-blue-400 mb-1">{currentWeek}</div>
-        <div className="text-sm text-gray-300">{WEEK_NAMES[currentWeek]}</div>
-        <div className="mt-3 h-1.5 bg-white/10 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full transition-all duration-700"
-            style={{ width: `${xpPercent}%` }}
-          />
-        </div>
-        <div className="text-xs text-gray-500 mt-1">{Math.round(xpPercent)}% of curriculum complete</div>
-      </div>
-
-      {/* Pomodoro */}
-      <PomodoroTimer />
-
-      {/* Current week topics */}
-      {currentTopics.length > 0 && (
-        <div>
-          <div className="text-xs text-gray-400 uppercase tracking-widest mb-2">This Week&apos;s Topics</div>
-          <div className="flex flex-wrap gap-2">
-            {currentTopics.map((t) => (
-              <TopicChip
-                key={t.topic_id}
-                topic={t}
-                currentWeek={currentWeek}
-                completedWeeks={completedWeeks}
-                onClick={(topic) => {
-                  setInput(`Tell me about ${topic.label}`);
-                  setActiveTab("chat");
-                }}
-              />
-            ))}
+        <div className="text-[10px] font-mono text-primary/60 uppercase tracking-[0.2em] mb-2">Subject Mastery</div>
+        <div className="text-4xl font-black text-white mb-1 leading-none">{currentWeek}</div>
+        <div className="text-sm font-light text-gray-400 mb-6 uppercase tracking-widest">{WEEK_NAMES[currentWeek]}</div>
+        
+        <div className="space-y-2">
+          <div className="flex justify-between text-[10px] uppercase font-mono">
+            <span className="text-gray-500">Progress</span>
+            <span className="text-primary">{xp} XP</span>
+          </div>
+          <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${xpPercent}%` }}
+              className="h-full bg-gradient-to-r from-primary to-secondary"
+            />
+          </div>
+          <div className="text-[9px] text-gray-600 font-mono italic">
+            Synchronizing with neural engine... {Math.round(xpPercent)}%
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Week list */}
+      <PomodoroTimer />
+
       <div>
-        <div className="text-xs text-gray-400 uppercase tracking-widest mb-2">12-Week Journey</div>
-        <div className="space-y-1">
+        <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-primary/40" />
+          Available Modules
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {currentTopics.map((t) => (
+            <TopicChip
+              key={t.topic_id}
+              topic={t}
+              currentWeek={currentWeek}
+              completedWeeks={completedWeeks}
+              onClick={(topic) => {
+                setInput(`Status report on: ${topic.label}`);
+                setActiveTab("chat");
+              }}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-auto">
+        <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-3">Roadmap Timeline</div>
+        <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
           {Array.from({ length: 12 }, (_, i) => i + 1).map((w) => {
             const done = completedWeeks.includes(w);
             const isCurrent = w === currentWeek;
             return (
               <div
                 key={w}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-                  isCurrent ? "bg-blue-500/20 border border-blue-500/40 text-white" :
-                  done ? "text-green-400" : "text-gray-500"
+                className={`flex items-center gap-4 px-4 py-3 rounded-xl text-xs font-mono transition-all duration-300 ${
+                  isCurrent ? "glass-panel-prism border-primary/40 text-primary shadow-lg shadow-primary/5" :
+                  done ? "text-primary/40" : "text-gray-600 opacity-60"
                 }`}
               >
-                <span className="w-4 text-center">
+                <span className="w-4 flex justify-center">
                   {done ? "✓" : isCurrent ? "▶" : w}
                 </span>
-                <span>{WEEK_NAMES[w]}</span>
+                <span className="uppercase tracking-widest">{WEEK_NAMES[w]}</span>
               </div>
             );
           })}
@@ -189,65 +174,90 @@ export default function TutorPage() {
 
   // ── Chat Panel ──────────────────────────────────────────────────────────────
   const ChatPanel = (
-    <div className="h-full flex flex-col">
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div className="h-full flex flex-col relative">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-8 custom-scrollbar">
         {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-center px-8">
-            <div className="text-4xl mb-4">🎯</div>
-            <h3 className="text-lg font-semibold text-white mb-2">Ready to build?</h3>
-            <p className="text-gray-400 text-sm">Ask anything about Week {currentWeek}, or tell me what you're working on.</p>
+          <div className="flex flex-col items-center justify-center h-full text-center px-12 max-w-md mx-auto">
+            <div className="w-16 h-16 rounded-full glass-panel-prism flex items-center justify-center text-2xl mb-6 pulse-primary border-primary/20">
+              💎
+            </div>
+            <h3 className="text-2xl font-black text-white italic tracking-tighter uppercase">SYNAPSE ACTIVE</h3>
+            <p className="text-gray-500 text-sm italic font-light italic">
+              Module {currentWeek} neural interface is online. Master the content.
+            </p>
           </div>
         )}
+        
         {messages.map((msg, i) => (
           <MessageBubble key={i} message={msg} />
         ))}
+        
         {loading && (
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-xs">AI</div>
-            <div className="glass-card rounded-2xl rounded-tl-sm px-4 py-3">
-              <div className="flex gap-1">
-                {[0, 1, 2].map((i) => (
-                  <motion.div key={i} className="w-2 h-2 bg-blue-400 rounded-full"
-                    animate={{ y: [0, -6, 0] }} transition={{ repeat: Infinity, duration: 0.8, delay: i * 0.15 }} />
-                ))}
-              </div>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-xl glass-panel-prism flex items-center justify-center text-[10px] font-bold text-primary border-primary/30">
+              AI
             </div>
-          </div>
+            <div className="glass-panel-prism rounded-2xl p-4 flex gap-2 border-primary/10">
+              <span className="w-2 h-2 rounded-full bg-primary/40 animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-primary/40 animate-pulse delay-75" />
+              <span className="w-2 h-2 rounded-full bg-primary/40 animate-pulse delay-150" />
+            </div>
+          </motion.div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Post-check banner */}
       <AnimatePresence>
         {postCheck.suggest_advance && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
-            className="mx-4 mb-2 p-3 bg-green-500/20 border border-green-500/40 rounded-xl flex items-center justify-between"
+            initial={{ opacity: 0, scale: 0.95 }} 
+            animate={{ opacity: 1, scale: 1 }} 
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="absolute bottom-28 left-4 right-4 sm:left-12 sm:right-12 glass-panel-prism p-4 rounded-2xl flex items-center justify-between border-primary/50 shadow-2xl shadow-primary/10 transition-all z-20"
           >
-            <span className="text-sm text-green-300">🎉 Week {currentWeek} complete? Mark it done!</span>
-            <button onClick={handleAdvanceWeek}
-              className="text-xs px-3 py-1 bg-green-500 hover:bg-green-400 text-white rounded-full transition-colors">
-              Mark Complete
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xl">🏆</div>
+              <div>
+                <div className="text-xs font-bold text-white uppercase tracking-widest">Milestone Detected</div>
+                <div className="text-[10px] text-gray-500 font-mono">Week {currentWeek} requirements met.</div>
+              </div>
+            </div>
+            <button 
+              onClick={async () => {
+                await advanceWeek(userId, currentWeek);
+                const p = await getProgress(userId);
+                setProgress(p);
+                setPostCheck({});
+              }}
+              className="px-6 py-2 bg-primary text-black text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-white transition-all shadow-lg shadow-primary/20"
+            >
+              Secure Progress
             </button>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Input */}
-      <div className="p-4 border-t border-white/10">
-        <div className="flex gap-2">
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-            placeholder={`Ask about Week ${currentWeek}...`}
-            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-blue-500/50 transition-colors"
-          />
-          <button onClick={handleSend} disabled={loading || !input.trim()}
-            className="px-4 py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl transition-colors font-medium text-sm">
-            ↑
-          </button>
+      <div className="p-4 sm:p-8 pt-0">
+        <div className="relative group max-w-4xl mx-auto">
+          <div className="absolute inset-0 bg-primary/10 rounded-2xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity" />
+          <div className="relative glass-panel-prism rounded-2xl p-1.5 flex items-center gap-2 border-white/5 group-hover:border-primary/20">
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
+              placeholder={`Communicate with Week ${currentWeek} logic...`}
+              className="flex-1 bg-transparent border-none px-6 py-4 text-white placeholder-gray-600 focus:outline-none text-sm font-light"
+            />
+            <button 
+              onClick={handleSend} 
+              disabled={loading || !input.trim()}
+              className="w-12 h-12 bg-primary text-black rounded-xl flex items-center justify-center hover:bg-white disabled:opacity-20 transition-all active:scale-90"
+            >
+              <svg className="w-5 h-5 fill-current rotate-90" viewBox="0 0 24 24">
+                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -255,34 +265,42 @@ export default function TutorPage() {
 
   // ── Resources Panel ─────────────────────────────────────────────────────────
   const ResourcesPanel = (
-    <div className="h-full overflow-y-auto p-4 space-y-4">
-      <div className="text-xs text-gray-400 uppercase tracking-widest mb-2">Week {currentWeek} Resources</div>
-      {weekResources.length > 0 ? (
-        <div className="space-y-2">
+    <div className="h-full overflow-y-auto p-6 space-y-8 custom-scrollbar">
+      <div>
+        <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-6">Neural Training Data</div>
+        <div className="space-y-3">
           {weekResources.map((r, i) => (
             <a key={i} href={r.url} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-3 p-3 glass-card rounded-xl hover:bg-white/10 transition-colors group">
-              <span className="text-red-400 text-lg">▶</span>
-              <span className="text-sm text-gray-200 group-hover:text-white transition-colors">{r.label}</span>
+              className="flex items-center gap-4 p-4 glass-panel-prism rounded-2xl hover:bg-white/5 transition-all group border-white/5"
+            >
+              <div className="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary group-hover:scale-110 transition-transform">
+                ▶
+              </div>
+              <div>
+                <div className="text-xs font-bold text-white group-hover:text-primary transition-colors leading-tight mb-0.5">
+                  {r.label.split(" — ")[1] || r.label}
+                </div>
+                <div className="text-[9px] font-mono text-gray-600 uppercase">
+                  {r.label.split(" — ")[0]}
+                </div>
+              </div>
             </a>
           ))}
         </div>
-      ) : (
-        <p className="text-gray-500 text-sm">Resources for this week coming soon.</p>
-      )}
+      </div>
 
-      <div className="pt-4">
-        <div className="text-xs text-gray-400 uppercase tracking-widest mb-2">Quick Links</div>
-        <div className="space-y-2">
+      <div className="pt-6 border-t border-white/5">
+        <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-4">Quick Protocols</div>
+        <div className="grid grid-cols-1 gap-2">
           {[
-            { label: "Anthropic Docs", url: "https://docs.anthropic.com" },
-            { label: "LangGraph Docs", url: "https://langchain-ai.github.io/langgraph/" },
-            { label: "ChromaDB Docs", url: "https://docs.trychroma.com" },
-            { label: "FastAPI Docs", url: "https://fastapi.tiangolo.com" },
+            { label: "Anthropic API", url: "https://docs.anthropic.com" },
+            { label: "LangGraph Core", url: "https://langchain-ai.github.io/langgraph/" },
+            { label: "ChromaDB Hub", url: "https://docs.trychroma.com" },
           ].map((link, i) => (
             <a key={i} href={link.url} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-3 p-3 glass-card rounded-xl hover:bg-white/10 transition-colors text-sm text-blue-400 hover:text-blue-300">
-              {link.label} ↗
+              className="px-4 py-3 glass-panel-prism rounded-xl text-[10px] font-mono text-primary/60 hover:text-primary hover:bg-primary/5 transition-all uppercase tracking-widest text-center"
+            >
+              {link.label}
             </a>
           ))}
         </div>
@@ -290,57 +308,84 @@ export default function TutorPage() {
     </div>
   );
 
-  // ── Layout ──────────────────────────────────────────────────────────────────
+  // ── Main Responsive Layout ──────────────────────────────────────────────────
   return (
-    <div className="h-screen flex flex-col bg-[#0a0e1a] text-white overflow-hidden">
-      {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 border-b border-white/10 flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <a href="/" className="text-gray-400 hover:text-white text-sm transition-colors">← Home</a>
-          <span className="text-gray-600">|</span>
-          <span className="text-sm font-semibold tracking-widest text-white uppercase">War Room</span>
+    <div className="h-screen flex flex-col cyber-bg text-white overflow-hidden">
+      <div className="absolute inset-0 cyber-grid pointer-events-none opacity-20" />
+      
+      {/* Header (Laptop + Mobile) */}
+      <header className="flex items-center justify-between px-6 py-4 glass-panel-prism border-b-none z-30">
+        <div className="flex items-center gap-4">
+          <button onClick={() => window.location.href="/"} className="p-2 -ml-2 text-gray-500 hover:text-white transition-colors">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+          </button>
+          <div className="h-4 w-[1px] bg-white/10" />
+          <div className="text-[10px] font-black uppercase tracking-[0.5em] text-white italic">
+            SYNAPSE <span className="text-primary not-italic">CHAT</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2 text-xs">
-          <span className="text-gray-400">Week</span>
-          <span className="text-blue-400 font-bold">{currentWeek}</span>
-          <span className="text-gray-600">·</span>
-          <span className="text-yellow-400">{xp} XP</span>
+        
+        <div className="flex items-center gap-8 hidden sm:flex">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">Latency</span>
+            <span className="text-[10px] font-mono text-primary">24ms</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <div className="text-[9px] font-mono text-gray-500 uppercase tracking-tighter">Identity Verified</div>
+              <div className="text-[10px] font-bold text-white uppercase tracking-widest tracking-tighter">Alex R.</div>
+            </div>
+            <div className="w-10 h-10 rounded-full glass-panel-prism p-0.5 border-primary/20">
+              <div className="w-full h-full rounded-full bg-gradient-to-br from-primary/40 to-secondary/40" />
+            </div>
+          </div>
         </div>
       </header>
 
-      {/* Desktop: 3-panel / Mobile: tab content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Desktop left sidebar */}
-        <aside className="hidden md:block w-64 border-r border-white/10 overflow-y-auto flex-shrink-0">
+      {/* Responsive Content Strategy */}
+      <div className="flex-1 flex overflow-hidden relative z-10 app-container w-full">
+        {/* Desktop Left Sidebar */}
+        <aside className="hidden lg:block w-80 flex-shrink-0 border-r border-white/5 overflow-y-auto custom-scrollbar">
           {CurriculumPanel}
         </aside>
 
-        {/* Center/main content */}
+        {/* Central Hub (Chat) */}
         <main className="flex-1 overflow-hidden flex flex-col">
-          {/* Mobile tab content */}
-          <div className="flex-1 overflow-hidden md:hidden">
-            {activeTab === "curriculum" && <div className="h-full overflow-y-auto">{CurriculumPanel}</div>}
-            {activeTab === "chat" && <div className="h-full flex flex-col">{ChatPanel}</div>}
+          {/* Mobile Tab Switcher content */}
+          <div className="flex-1 overflow-hidden lg:hidden">
+            {activeTab === "curriculum" && <div className="h-full overflow-y-auto custom-scrollbar">{CurriculumPanel}</div>}
+            {activeTab === "chat" && <div className="h-full">{ChatPanel}</div>}
             {activeTab === "resources" && <div className="h-full">{ResourcesPanel}</div>}
           </div>
-          {/* Desktop always-show chat */}
-          <div className="hidden md:flex flex-col flex-1 overflow-hidden">{ChatPanel}</div>
+          
+          {/* Desktop permanent chat */}
+          <div className="hidden lg:flex flex-col flex-1 overflow-hidden">{ChatPanel}</div>
         </main>
 
-        {/* Desktop right resources panel */}
-        <aside className="hidden lg:block w-72 border-l border-white/10 overflow-y-auto flex-shrink-0">
+        {/* Desktop Right Sidebar (Resources) */}
+        <aside className="hidden xl:block w-80 flex-shrink-0 border-l border-white/5 overflow-y-auto custom-scrollbar">
           {ResourcesPanel}
         </aside>
       </div>
 
-      {/* Mobile bottom nav */}
-      <nav className="md:hidden flex border-t border-white/10 flex-shrink-0">
+      {/* Mobile Bottom Navigation */}
+      <nav className="lg:hidden flex glass-panel-prism border-t-none pb-safe">
         {(["curriculum", "chat", "resources"] as Tab[]).map((tab) => (
-          <button key={tab} onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-3 text-xs uppercase tracking-widest transition-colors ${
-              activeTab === tab ? "text-blue-400 border-t-2 border-blue-400 -mt-px" : "text-gray-500 hover:text-gray-300"
-            }`}>
-            {tab === "curriculum" ? "📋" : tab === "chat" ? "💬" : "📚"} {tab}
+          <button 
+            key={tab} 
+            onClick={() => setActiveTab(tab)}
+            className={`flex-1 flex flex-col items-center justify-center gap-1 py-4 transition-all ${
+              activeTab === tab ? "text-primary border-t border-primary/50" : "text-gray-500"
+            }`}
+          >
+            <span className="text-lg">
+              {tab === "curriculum" ? "◈" : tab === "chat" ? "▣" : "▧"}
+            </span>
+            <span className="text-[10px] font-mono uppercase tracking-widest italic font-bold">
+              {tab === "curriculum" ? "Code" : tab === "chat" ? "Chat" : "Intel"}
+            </span>
           </button>
         ))}
       </nav>
@@ -353,40 +398,52 @@ function MessageBubble({ message }: { message: Message }) {
   const isUser = message.role === "user";
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-      className={`flex gap-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}
+      initial={{ opacity: 0, x: isUser ? 20 : -20 }} 
+      animate={{ opacity: 1, x: 0 }}
+      className={`flex gap-4 sm:gap-6 ${isUser ? "flex-row-reverse" : "flex-row"}`}
     >
-      <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold ${
-        isUser ? "bg-blue-600 text-white" : "bg-white/10 text-gray-300"
+      <div className={`w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center text-[10px] font-black border transition-colors ${
+        isUser ? "bg-white text-black border-white" : "glass-panel-prism text-primary border-primary/30"
       }`}>
-        {isUser ? "You" : "AI"}
+        {isUser ? "USR" : "AI"}
       </div>
-      <div className={`max-w-[85%] md:max-w-[70%] ${isUser ? "items-end" : "items-start"} flex flex-col gap-1`}>
-        <div className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-          isUser ? "bg-blue-600 text-white rounded-tr-sm" : "glass-card text-gray-100 rounded-tl-sm"
+      <div className={`max-w-[90%] sm:max-w-[75%] ${isUser ? "items-end" : "items-start"} flex flex-col gap-2`}>
+        <div className={`rounded-3xl p-5 sm:p-7 text-sm font-light leading-relaxed tracking-wide shadow-2xl transition-all ${
+          isUser ? "bg-white text-black rounded-tr-none font-medium" : "glass-panel-prism text-gray-200 rounded-tl-none border-white/5"
         }`}>
           {isUser ? (
             <p>{message.content}</p>
           ) : (
-            <ReactMarkdown remarkPlugins={[remarkGfm]}
+            <ReactMarkdown 
+              remarkPlugins={[remarkGfm]}
               components={{
-                code({ node, className, children, ...props }) {
+                code({ className, children, ...props }) {
                   return (
-                    <code className="bg-black/30 px-1.5 py-0.5 rounded text-blue-300 text-xs font-mono" {...props}>
+                    <code className="bg-black/40 px-2 py-0.5 rounded text-primary font-mono text-[13px] border border-primary/10" {...props}>
                       {children}
                     </code>
                   );
                 },
                 pre({ children }) {
-                  return <pre className="bg-black/40 rounded-lg p-3 overflow-x-auto my-2 text-xs">{children}</pre>;
+                  return (
+                    <div className="relative my-6 group">
+                      <div className="absolute -inset-1 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl blur opacity-20" />
+                      <pre className="relative bg-[#050505] rounded-xl p-6 overflow-x-auto text-[13px] font-mono border border-white/5 custom-scrollbar">
+                        {children}
+                      </pre>
+                    </div>
+                  );
                 },
-              }}>
+                p({ children }) { return <p className="mb-4 last:mb-0">{children}</p>; },
+                ul({ children }) { return <ul className="list-disc pl-5 mb-4 space-y-1">{children}</ul>; },
+              }}
+            >
               {message.content}
             </ReactMarkdown>
           )}
         </div>
         {!isUser && (
-          <div className="flex items-center gap-2 px-1">
+          <div className="flex flex-wrap items-center gap-3 px-1 mt-1">
             {message.model_tier && <ModelBadge tier={message.model_tier} />}
             {message.confidence_score != null && <ConfidenceBadge score={message.confidence_score} />}
           </div>
