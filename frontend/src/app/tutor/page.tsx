@@ -145,7 +145,7 @@ export default function TutorPage() {
         setPostCheck(res.post_check || {});
       })
       .catch(() => {
-        addMessage({ role: "assistant", content: "Signal lost. Attempt reconnection...", timestamp: new Date().toISOString() });
+        addMessage({ role: "assistant", content: "⚠️ Backend unreachable — make sure the backend is running on port 8000 and your API keys are valid in `backend/.env`.", timestamp: new Date().toISOString() });
       })
       .finally(() => setLoading(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -171,7 +171,7 @@ export default function TutorPage() {
       });
       setPostCheck(res.post_check || {});
     } catch (e) {
-      addMessage({ role: "assistant", content: "Signal lost. Attempt reconnection...", timestamp: new Date().toISOString() });
+      addMessage({ role: "assistant", content: "⚠️ Backend unreachable — make sure the backend is running on port 8000 and your API keys are valid in `backend/.env`.", timestamp: new Date().toISOString() });
     } finally {
       setLoading(false);
     }
@@ -384,7 +384,7 @@ export default function TutorPage() {
         )}
       </AnimatePresence>
 
-      <div className="p-4 sm:p-8 pt-0">
+      <div className="flex-shrink-0 p-4 sm:p-8 pt-0">
         <div className="relative group max-w-4xl mx-auto">
           <div className="absolute inset-0 bg-primary/10 rounded-2xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity" />
           <div className="relative glass-panel-prism rounded-2xl p-1.5 flex items-center gap-2 border-white/5 group-hover:border-primary/20">
@@ -511,7 +511,7 @@ export default function TutorPage() {
           {/* Mobile Tab Switcher content */}
           <div className="flex-1 overflow-hidden lg:hidden">
             {activeTab === "curriculum" && <div className="h-full overflow-y-auto custom-scrollbar">{CurriculumPanel}</div>}
-            {activeTab === "chat" && <div className="h-full">{ChatPanel}</div>}
+            {activeTab === "chat" && <div className="h-full flex flex-col">{ChatPanel}</div>}
             {activeTab === "resources" && <div className="h-full">{ResourcesPanel}</div>}
           </div>
           
@@ -704,7 +704,7 @@ export default function TutorPage() {
       </AnimatePresence>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="lg:hidden flex glass-panel-prism border-t-none pb-safe">
+      <nav className="lg:hidden flex-shrink-0 flex glass-panel-prism border-t-none pb-safe">
         {(["curriculum", "chat", "resources"] as Tab[]).map((tab) => (
           <button 
             key={tab} 
