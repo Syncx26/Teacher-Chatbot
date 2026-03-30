@@ -134,6 +134,12 @@ body {
   width: 100%;
 }
 
+/* h-dvh — full viewport height that excludes browser chrome (address bar) */
+.h-dvh {
+  height: 100vh; /* fallback for older browsers */
+  height: 100dvh;
+}
+
 /* pb-safe — safe-area bottom padding for notched devices */
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 0.5rem);

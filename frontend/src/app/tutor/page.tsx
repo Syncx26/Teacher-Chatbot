@@ -95,7 +95,7 @@ const WEEK_RESOURCES: Record<number, { label: string; url: string; type?: string
 export default function TutorPage() {
   const {
     userId, currentWeek, xp, completedWeeks, messages,
-    topics, activeTab, pendingMessage, setProgress, addMessage, setTopics, setActiveTab, setPendingMessage,
+    topics, activeTab, setProgress, addMessage, setTopics, setActiveTab,
   } = useAppStore();
 
   const [input, setInput] = useState("");
@@ -124,14 +124,32 @@ export default function TutorPage() {
     getTopics(userId).then((ts) => setTopics(ts.map((t) => ({ ...t, label: t.label ?? t.name })))).catch(console.error);
   }, [userId, setProgress, setTopics]);
 
-  // Auto-send any message queued from the home page
+  // Auto-send any message queued from the home page (runs once on mount)
+  const hasSentPendingRef = useRef(false);
   useEffect(() => {
-    if (!pendingMessage || !userId) return;
-    const msg = pendingMessage;
-    setPendingMessage("");
-    handleSend(msg);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingMessage, userId]);
+    if (hasSentPendingRef.current) return;
+    const { pendingMessage: pending, userId: uid } = useAppStore.getState();
+    if (!pending || !uid) return;
+    hasSentPendingRef.current = true;
+    useAppStore.getState().setPendingMessage("");
+    addMessage({ role: "user", content: pending, timestamp: new Date().toISOString() });
+    setLoading(true);
+    sendMessage(uid, pending)
+      .then((res) => {
+        addMessage({
+          role: "assistant",
+          content: res.content,
+          model_tier: res.model_tier,
+          confidence_score: res.confidence_score ?? undefined,
+          timestamp: new Date().toISOString(),
+        });
+        setPostCheck(res.post_check || {});
+      })
+      .catch(() => {
+        addMessage({ role: "assistant", content: "Signal lost. Attempt reconnection...", timestamp: new Date().toISOString() });
+      })
+      .finally(() => setLoading(false));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -448,11 +466,11 @@ export default function TutorPage() {
 
   // ── Main Responsive Layout ──────────────────────────────────────────────────
   return (
-    <div className="h-[100dvh] flex flex-col cyber-bg text-white overflow-hidden">
+    <div className="h-dvh flex flex-col cyber-bg text-white overflow-hidden">
       <div className="absolute inset-0 cyber-grid pointer-events-none opacity-20" />
       
       {/* Header (Laptop + Mobile) */}
-      <header className="flex items-center justify-between px-6 py-4 glass-panel-prism border-b-none z-30">
+      <header className="flex-shrink-0 flex items-center justify-between px-6 py-4 glass-panel-prism border-b-none relative z-30">
         <div className="flex items-center gap-4">
           <button onClick={() => window.location.href="/"} className="p-2 -ml-2 text-gray-500 hover:text-white transition-colors">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
