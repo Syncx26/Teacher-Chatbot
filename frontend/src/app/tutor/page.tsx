@@ -21,26 +21,74 @@ const WEEK_NAMES: Record<number, string> = {
   9: "Multi-Agent", 10: "Autonomous", 11: "Dashboard", 12: "Ship It",
 };
 
-const WEEK_RESOURCES: Record<number, { label: string; url: string }[]> = {
+const WEEK_RESOURCES: Record<number, { label: string; url: string; type?: string }[]> = {
   1: [
-    { label: "Corey Schafer — Python Dicts (19m)", url: "https://www.youtube.com/watch?v=daefaLgNkw0" },
-    { label: "Corey Schafer — JSON Files (20m)", url: "https://www.youtube.com/watch?v=9N6a-VLBa2I" },
+    { label: "Corey Schafer — Python Dicts (19m)", url: "https://www.youtube.com/watch?v=daefaLgNkw0", type: "video" },
+    { label: "Corey Schafer — JSON Files (20m)", url: "https://www.youtube.com/watch?v=9N6a-VLBa2I", type: "video" },
+    { label: "Python Docs — Dictionaries", url: "https://docs.python.org/3/tutorial/datastructures.html#dictionaries", type: "docs" },
+    { label: "RealPython — Working with JSON", url: "https://realpython.com/python-json/", type: "article" },
   ],
   2: [
-    { label: "freeCodeCamp — APIs for Beginners", url: "https://www.youtube.com/watch?v=GZvSYJDk-us" },
-    { label: "Tech With Tim — Python Requests (22m)", url: "https://www.youtube.com/watch?v=tb8gHvYlCFs" },
+    { label: "freeCodeCamp — APIs for Beginners (2h)", url: "https://www.youtube.com/watch?v=GZvSYJDk-us", type: "video" },
+    { label: "Tech With Tim — Python Requests (22m)", url: "https://www.youtube.com/watch?v=tb8gHvYlCFs", type: "video" },
+    { label: "Requests Library Docs", url: "https://requests.readthedocs.io/en/latest/", type: "docs" },
+    { label: "RealPython — HTTP Requests", url: "https://realpython.com/python-requests/", type: "article" },
   ],
   3: [
-    { label: "Corey Schafer — SQLite (30m)", url: "https://www.youtube.com/watch?v=pd-0G0MigUA" },
-    { label: "freeCodeCamp — SQL Tutorial", url: "https://www.youtube.com/watch?v=HXV3zeQKqGY" },
+    { label: "Corey Schafer — SQLite (30m)", url: "https://www.youtube.com/watch?v=pd-0G0MigUA", type: "video" },
+    { label: "freeCodeCamp — SQL Full Course", url: "https://www.youtube.com/watch?v=HXV3zeQKqGY", type: "video" },
+    { label: "Python sqlite3 Official Docs", url: "https://docs.python.org/3/library/sqlite3.html", type: "docs" },
+    { label: "SQLite Tutorial (sqlitetutorial.net)", url: "https://www.sqlitetutorial.net/", type: "article" },
   ],
   4: [
-    { label: "Anthropic Quickstart Docs", url: "https://docs.anthropic.com/en/docs/quickstart" },
-    { label: "Claude API Python Tutorial", url: "https://www.youtube.com/watch?v=QdP9PEHxY3c" },
+    { label: "Anthropic — Quickstart Guide", url: "https://docs.anthropic.com/en/docs/quickstart", type: "docs" },
+    { label: "Anthropic — Messages API Ref", url: "https://docs.anthropic.com/en/api/messages", type: "docs" },
+    { label: "Claude API Python Tutorial (YouTube)", url: "https://www.youtube.com/watch?v=QdP9PEHxY3c", type: "video" },
+    { label: "Anthropic — System Prompts Guide", url: "https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/system-prompts", type: "docs" },
   ],
   5: [
-    { label: "KodeKloud — RAG Crash Course (59m)", url: "https://www.youtube.com/watch?v=T-D1OfcDW1M" },
-    { label: "RAG From Scratch", url: "https://www.youtube.com/watch?v=sVcwVQRHIc8" },
+    { label: "KodeKloud — RAG Crash Course (59m)", url: "https://www.youtube.com/watch?v=T-D1OfcDW1M", type: "video" },
+    { label: "RAG From Scratch (LangChain YT)", url: "https://www.youtube.com/watch?v=sVcwVQRHIc8", type: "video" },
+    { label: "LangChain RAG Tutorial (Docs)", url: "https://python.langchain.com/docs/tutorials/rag/", type: "docs" },
+    { label: "ChromaDB Official Docs", url: "https://docs.trychroma.com/", type: "docs" },
+  ],
+  6: [
+    { label: "LangGraph — Introduction Tutorial", url: "https://langchain-ai.github.io/langgraph/tutorials/introduction/", type: "docs" },
+    { label: "LangGraph — Core Concepts", url: "https://langchain-ai.github.io/langgraph/concepts/", type: "docs" },
+    { label: "LangGraph Crash Course (YouTube)", url: "https://www.youtube.com/watch?v=R8KB-Zcynxc", type: "video" },
+    { label: "LangGraph — SQLiteSaver Checkpointing", url: "https://langchain-ai.github.io/langgraph/how-tos/persistence/", type: "docs" },
+  ],
+  7: [
+    { label: "LangSmith Official Docs", url: "https://docs.smith.langchain.com/", type: "docs" },
+    { label: "LangSmith — Tracing Guide", url: "https://docs.smith.langchain.com/how_to_guides/tracing", type: "docs" },
+    { label: "LangSmith Tutorial (YouTube)", url: "https://www.youtube.com/watch?v=tFXm5ijih98", type: "video" },
+  ],
+  8: [
+    { label: "MCP Official Docs (modelcontextprotocol.io)", url: "https://modelcontextprotocol.io/introduction", type: "docs" },
+    { label: "FastMCP GitHub & README", url: "https://github.com/jlowin/fastmcp", type: "docs" },
+    { label: "MCP Explained (YouTube)", url: "https://www.youtube.com/watch?v=kQmXtrmQ5Zg", type: "video" },
+    { label: "Anthropic — MCP Overview", url: "https://docs.anthropic.com/en/docs/agents-and-tools/mcp", type: "docs" },
+  ],
+  9: [
+    { label: "LangGraph — Multi-Agent Concepts", url: "https://langchain-ai.github.io/langgraph/concepts/multi_agent/", type: "docs" },
+    { label: "LangGraph — Subgraphs How-To", url: "https://langchain-ai.github.io/langgraph/how-tos/subgraph/", type: "docs" },
+    { label: "Multi-Agent Systems Tutorial (YouTube)", url: "https://www.youtube.com/watch?v=hvAPnpSfSGo", type: "video" },
+  ],
+  10: [
+    { label: "LangGraph — Human-in-the-Loop", url: "https://langchain-ai.github.io/langgraph/concepts/human_in_the_loop/", type: "docs" },
+    { label: "LangGraph — Breakpoints & Approval", url: "https://langchain-ai.github.io/langgraph/how-tos/breakpoints/", type: "docs" },
+    { label: "Autonomous Agents Tutorial (YouTube)", url: "https://www.youtube.com/watch?v=bZzyPscbtI8", type: "video" },
+  ],
+  11: [
+    { label: "Streamlit Official Docs", url: "https://docs.streamlit.io/", type: "docs" },
+    { label: "Streamlit in 45 Minutes (YouTube)", url: "https://www.youtube.com/watch?v=JwSS70SZdyM", type: "video" },
+    { label: "LangSmith — Evaluation Docs", url: "https://docs.smith.langchain.com/evaluation", type: "docs" },
+  ],
+  12: [
+    { label: "draw.io — Architecture Diagrams", url: "https://www.drawio.com/", type: "docs" },
+    { label: "How to Write a Great README (YouTube)", url: "https://www.youtube.com/watch?v=E6NO0rgFub4", type: "video" },
+    { label: "GitHub Pages — Deploy Your Project", url: "https://pages.github.com/", type: "docs" },
+    { label: "Railway — Deploy Full Stack Apps", url: "https://railway.app/", type: "docs" },
   ],
 };
 
@@ -53,6 +101,7 @@ export default function TutorPage() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [postCheck, setPostCheck] = useState<any>({});
+  const [autoSend, setAutoSend] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Find More Resources
@@ -73,17 +122,36 @@ export default function TutorPage() {
   useEffect(() => {
     if (!userId) return;
     getProgress(userId).then(setProgress).catch(console.error);
-    getTopics(userId).then((ts) => setTopics(ts.map((t) => ({ ...t, label: t.name })))).catch(console.error);
+    getTopics(userId).then((ts) => setTopics(ts.map((t) => ({ ...t, label: t.label ?? t.name })))).catch(console.error);
   }, [userId, setProgress, setTopics]);
+
+  // Read query param on mount and queue auto-send
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get("q");
+    if (q) {
+      setAutoSend(decodeURIComponent(q));
+      window.history.replaceState({}, "", "/tutor");
+    }
+  }, []);
+
+  // Trigger auto-send once userId is ready
+  useEffect(() => {
+    if (!autoSend || !userId || loading) return;
+    const msg = autoSend;
+    setAutoSend(null);
+    handleSend(msg);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoSend, userId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  async function handleSend() {
-    if (!input.trim() || loading) return;
-    const userMsg = input.trim();
-    setInput("");
+  async function handleSend(overrideMsg?: string) {
+    const userMsg = overrideMsg ?? input.trim();
+    if (!userMsg || loading) return;
+    if (!overrideMsg) setInput("");
     addMessage({ role: "user", content: userMsg, timestamp: new Date().toISOString() });
     setLoading(true);
     try {
@@ -321,8 +389,8 @@ export default function TutorPage() {
               placeholder={`Communicate with Week ${currentWeek} logic...`}
               className="flex-1 bg-transparent border-none px-6 py-4 text-white placeholder-gray-600 focus:outline-none text-sm font-light"
             />
-            <button 
-              onClick={handleSend} 
+            <button
+              onClick={() => handleSend()}
               disabled={loading || !input.trim()}
               className="w-12 h-12 bg-primary text-black rounded-xl flex items-center justify-center hover:bg-white disabled:opacity-20 transition-all active:scale-90"
             >
@@ -354,11 +422,11 @@ export default function TutorPage() {
             <a key={i} href={r.url} target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-4 p-4 glass-panel-prism rounded-2xl hover:bg-white/5 transition-all group border-white/5"
             >
-              <div className="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary group-hover:scale-110 transition-transform">
-                ▶
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform text-sm ${r.type === "video" ? "bg-secondary/10 text-secondary" : r.type === "docs" ? "bg-primary/10 text-primary" : "bg-white/5 text-gray-400"}`}>
+                {r.type === "video" ? "▶" : r.type === "docs" ? "◆" : "◈"}
               </div>
-              <div>
-                <div className="text-xs font-bold text-white group-hover:text-primary transition-colors leading-tight mb-0.5">
+              <div className="min-w-0">
+                <div className="text-xs font-bold text-white group-hover:text-primary transition-colors leading-tight mb-0.5 truncate">
                   {r.label.split(" — ")[1] || r.label}
                 </div>
                 <div className="text-[9px] font-mono text-gray-600 uppercase">
@@ -391,7 +459,7 @@ export default function TutorPage() {
 
   // ── Main Responsive Layout ──────────────────────────────────────────────────
   return (
-    <div className="h-screen flex flex-col cyber-bg text-white overflow-hidden">
+    <div className="h-[100dvh] flex flex-col cyber-bg text-white overflow-hidden">
       <div className="absolute inset-0 cyber-grid pointer-events-none opacity-20" />
       
       {/* Header (Laptop + Mobile) */}

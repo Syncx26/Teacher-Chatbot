@@ -18,6 +18,7 @@ export interface TopicResponse {
   topic_id: string;
   week: number;
   name: string;
+  label?: string;
   what: string;
   why: string;
   build: string;

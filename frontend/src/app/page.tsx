@@ -25,7 +25,11 @@ export default function GatewayPage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    router.push("/tutor");
+    if (prompt.trim()) {
+      router.push(`/tutor?q=${encodeURIComponent(prompt.trim())}`);
+    } else {
+      router.push("/tutor");
+    }
   }
 
   return (
