@@ -86,19 +86,17 @@ def _parse_confidence(text: str) -> tuple[str, int | None, str | None]:
 async def _call_openrouter(model: str, system_prompt: str, messages: list[dict]) -> str:
     """
     Call an OpenRouter model using the OpenAI-compatible chat completions API.
-    Falls back to Gemini (direct SDK) if OPENROUTER_API_KEY is not set.
+    Falls back to Claude Haiku (Anthropic) if OPENROUTER_API_KEY is not set.
     """
     if not OPENROUTER_API_KEY:
-        # Graceful degradation: use Gemini direct when no OpenRouter key
-        gemini_model = genai.GenerativeModel(MODEL_GEMINI)
-        full_prompt = f"{system_prompt}\n\n"
-        for m in messages:
-            role = "User" if m["role"] == "user" else "Assistant"
-            full_prompt += f"{role}: {m['content']}\n"
-        response = await asyncio.get_event_loop().run_in_executor(
-            None, lambda: gemini_model.generate_content(full_prompt)
+        # Graceful degradation: use Claude Haiku when no OpenRouter key
+        return await _run_tool_loop(
+            model=MODEL_HAIKU,
+            system_prompt=system_prompt,
+            messages=messages,
+            use_tools=False,
+            use_thinking=False,
         )
-        return response.text
 
     payload: dict[str, Any] = {
         "model": model,
