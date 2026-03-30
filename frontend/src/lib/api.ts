@@ -75,10 +75,10 @@ export async function sendMessage(
 }
 
 export async function advanceWeek(userId: string, week: number): Promise<unknown> {
-  const res = await fetch(`${BASE}/progress/${userId}/advance`, {
+  const res = await fetch(`${BASE}/progress/advance`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ week }),
+    body: JSON.stringify({ user_id: userId, week }),
   });
   if (!res.ok) throw new Error(`advanceWeek failed: ${res.status}`);
   return res.json();
@@ -157,10 +157,10 @@ export async function chatAboutPaper(
   paperId: number,
   message: string
 ): Promise<ChatResponse> {
-  const res = await fetch(`${BASE}/papers/${paperId}/chat`, {
+  const res = await fetch(`${BASE}/chat/paper`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ user_id: userId, message }),
+    body: JSON.stringify({ user_id: userId, paper_id: paperId, message }),
   });
   if (!res.ok) throw new Error(`chatAboutPaper failed: ${res.status}`);
   return res.json();

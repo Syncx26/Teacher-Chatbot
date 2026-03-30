@@ -124,14 +124,13 @@ export default function TutorPage() {
     getTopics(userId).then((ts) => setTopics(ts.map((t) => ({ ...t, label: t.label ?? t.name })))).catch(console.error);
   }, [userId, setProgress, setTopics]);
 
-  // Auto-send any message queued from the home page (runs once on mount)
-  const hasSentPendingRef = useRef(false);
+  // Auto-send any message queued from the home page
   useEffect(() => {
-    if (hasSentPendingRef.current) return;
-    const { pendingMessage: pending, userId: uid } = useAppStore.getState();
-    if (!pending || !uid) return;
-    hasSentPendingRef.current = true;
-    useAppStore.getState().setPendingMessage("");
+    const pending = sessionStorage.getItem("synapse_pending_msg");
+    if (!pending) return;
+    sessionStorage.removeItem("synapse_pending_msg");
+    const uid = useAppStore.getState().userId;
+    if (!uid) return;
     addMessage({ role: "user", content: pending, timestamp: new Date().toISOString() });
     setLoading(true);
     sendMessage(uid, pending)
