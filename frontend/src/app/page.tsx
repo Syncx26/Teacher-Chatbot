@@ -51,7 +51,7 @@ export default function GatewayPage() {
       <div className="prism-orb top-[-10%] right-[-10%]" />
       <div className="prism-orb bottom-[-10%] left-[-10%] opacity-20" />
 
-      <div className="absolute top-4 right-4 z-20">
+      <div className="absolute abs-top-safe right-4 z-20">
         <ThemeToggle />
       </div>
 

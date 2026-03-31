@@ -177,7 +177,7 @@ function ResearchPageInner() {
       {isDark && <div className="absolute inset-0 cyber-grid pointer-events-none opacity-10" />}
 
       {/* Header */}
-      <header className={`sticky top-0 z-30 border-b py-3 px-4 sm:px-6 transition-colors ${isDark ? "glass-panel-prism border-white/5" : "bg-white/90 border-gray-200 backdrop-blur-sm shadow-sm"}`}>
+      <header className={`sticky-safe z-30 border-b py-3 px-4 sm:px-6 transition-colors ${isDark ? "glass-panel-prism border-white/5" : "bg-white/90 border-gray-200 backdrop-blur-sm shadow-sm"}`}>
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <button

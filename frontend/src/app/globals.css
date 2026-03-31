@@ -145,9 +145,20 @@ body {
   padding-bottom: env(safe-area-inset-bottom, 0.5rem);
 }
 
-/* safe-top — safe-area top padding so header isn't hidden under device notch */
+/* safe-top — safe-area top padding so content isn't hidden under device notch */
 .safe-top {
   padding-top: env(safe-area-inset-top, 0);
+}
+
+/* sticky-safe — sticky header that accounts for safe area (notch/island) */
+.sticky-safe {
+  position: sticky;
+  top: env(safe-area-inset-top, 0);
+}
+
+/* abs-top-safe — absolute top position with safe area offset */
+.abs-top-safe {
+  top: max(1rem, env(safe-area-inset-top, 1rem));
 }
 
 /* ─── Light Mode ──────────────────────────────────────────────────────────── */
