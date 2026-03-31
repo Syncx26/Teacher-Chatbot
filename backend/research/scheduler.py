@@ -51,17 +51,21 @@ def stop_scheduler():
         _scheduler.shutdown(wait=False)
 
 
-async def trigger_refresh(current_week: int) -> dict:
+async def trigger_refresh(current_week: int, topic: str | None = None) -> dict:
     """Manual refresh trigger — called from API endpoint."""
-    print(f"[scheduler] Manual refresh triggered for week {current_week}...")
-    added = await fetch_all_papers(current_week)
+    if topic:
+        print(f"[scheduler] Manual refresh triggered for topic: {topic}...")
+        added = await fetch_all_for_topic(topic)
+    else:
+        print(f"[scheduler] Manual refresh triggered — all topics (week context: {current_week})...")
+        added = await refresh_all_topics()
     return {"status": "ok", "papers_added": added}
 
 
 async def startup_check(current_week: int):
     """Run on app startup — refresh if stale."""
     if is_stale():
-        print("[scheduler] Papers are stale — running startup refresh...")
-        await fetch_all_papers(current_week)
+        print("[scheduler] Papers are stale — running startup refresh (all topics)...")
+        await refresh_all_topics()
     else:
         print("[scheduler] Papers are fresh — skipping startup fetch.")

@@ -208,8 +208,9 @@ export async function getPaper(paperId: number): Promise<PaperResponse> {
   return res.json();
 }
 
-export async function refreshPapers(userId: string): Promise<unknown> {
-  const res = await fetch(`${BASE}/papers/refresh`, {
+export async function refreshPapers(userId: string, topic?: string): Promise<unknown> {
+  const url = topic ? `${BASE}/papers/refresh?topic=${topic}` : `${BASE}/papers/refresh`;
+  const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ user_id: userId }),

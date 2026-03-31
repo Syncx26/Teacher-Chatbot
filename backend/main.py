@@ -206,9 +206,9 @@ async def list_papers_endpoint(
 ):
     papers = get_papers(limit=limit, offset=offset, source=source, topic=topic)
     last_refresh = get_last_refresh_time()
-    # Auto-trigger background fetch if DB is empty (first deploy)
+    # Auto-trigger background fetch if DB is empty for this topic (first deploy)
     if not papers and last_refresh is None:
-        asyncio.create_task(trigger_refresh(1))
+        asyncio.create_task(trigger_refresh(1, topic=topic or "ai"))
     return {
         "papers": papers,
         "total": len(papers),
@@ -223,9 +223,9 @@ def get_paper(paper_id: int):
 
 
 @app.post("/papers/refresh")
-async def refresh_papers(req: RefreshRequest):
+async def refresh_papers(req: RefreshRequest, topic: Optional[str] = None):
     progress = get_progress(req.user_id)
-    result = await trigger_refresh(progress["current_week"])
+    result = await trigger_refresh(progress["current_week"], topic=topic)
     return result
 
 

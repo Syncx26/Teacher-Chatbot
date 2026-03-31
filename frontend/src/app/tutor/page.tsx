@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
+import { ThemeToggle } from "@/components/ThemeProvider";
 import remarkGfm from "remark-gfm";
 import { useAppStore, Message } from "@/lib/store";
 import { sendMessage, getProgress, getTopics, advanceWeek, getMoreResources, proposeTopic, confirmTopic, MoreResource, TopicProposal } from "@/lib/api";
@@ -501,7 +502,7 @@ export default function TutorPage() {
           </div>
         </div>
         
-        <div className="flex items-center gap-8 hidden sm:flex">
+        <div className="flex items-center gap-4 hidden sm:flex">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">Latency</span>
             <span className="text-[10px] font-mono text-primary">24ms</span>
@@ -515,6 +516,11 @@ export default function TutorPage() {
               <div className="w-full h-full rounded-full bg-gradient-to-br from-primary/40 to-secondary/40" />
             </div>
           </div>
+          <ThemeToggle />
+        </div>
+        {/* Mobile theme toggle */}
+        <div className="sm:hidden">
+          <ThemeToggle />
         </div>
       </header>
 

@@ -115,7 +115,7 @@ function ResearchPageInner() {
     if (!userId || syncing) return;
     setSyncing(true);
     try {
-      await refreshPapers(userId);
+      await refreshPapers(userId, activeTopic);
       await loadPapers(activeTopic, 0);
     } catch (e) {
       console.error("Sync failed:", e);

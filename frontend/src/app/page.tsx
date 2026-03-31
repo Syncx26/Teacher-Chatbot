@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { ThemeToggle } from "@/components/ThemeProvider";
 
 const WEEK_TOPICS = [
   { week: 1, name: "Python & JSON" },
@@ -37,6 +38,10 @@ export default function GatewayPage() {
       <div className="absolute inset-0 cyber-grid pointer-events-none opacity-40" />
       <div className="prism-orb top-[-10%] right-[-10%]" />
       <div className="prism-orb bottom-[-10%] left-[-10%] opacity-20" />
+      {/* Theme toggle */}
+      <div className="absolute top-4 right-4 z-20">
+        <ThemeToggle />
+      </div>
 
       <div className="relative z-10 w-full max-w-4xl mx-auto flex flex-col items-center">
         {/* Branding Section */}
