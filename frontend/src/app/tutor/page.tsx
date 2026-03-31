@@ -878,7 +878,7 @@ function MessageBubble({ message }: { message: Message }) {
       </div>
       <div className={`max-w-[90%] sm:max-w-[75%] min-w-0 ${isUser ? "items-end" : "items-start"} flex flex-col gap-2`}>
         <div className={`rounded-3xl p-5 sm:p-7 text-sm font-light leading-relaxed tracking-wide shadow-2xl transition-all min-w-0 w-full ${
-          isUser ? "bg-white text-black rounded-tr-none font-medium" : "glass-panel-prism text-gray-200 rounded-tl-none border-white/5"
+          isUser ? "bg-white text-black rounded-tr-none font-medium" : "glass-panel-prism text-gray-200 nova-msg rounded-tl-none border-white/5"
         }`}>
           {isUser ? (
             <p>{message.content}</p>

@@ -246,19 +246,46 @@ html.light .prose strong { color: #0f172a; }
 html.light .prose code { background: rgba(0, 0, 0, 0.06); color: #0f172a; }
 html.light .prose pre { background: rgba(0, 0, 0, 0.05); }
 
-/* Chat bubble inline code + code blocks in light mode */
-html.light code.bg-black\/40 {
+/* Nova assistant chat bubble — make all generated markdown text dark in light mode */
+html.light .nova-msg,
+html.light .nova-msg p,
+html.light .nova-msg li,
+html.light .nova-msg ul,
+html.light .nova-msg ol,
+html.light .nova-msg strong,
+html.light .nova-msg em,
+html.light .nova-msg h1,
+html.light .nova-msg h2,
+html.light .nova-msg h3,
+html.light .nova-msg h4,
+html.light .nova-msg blockquote {
+  color: #0f172a !important;
+}
+
+/* Inline code inside Nova bubble */
+html.light .nova-msg code {
   background: rgba(0, 0, 0, 0.07) !important;
   color: #0f172a !important;
   border-color: rgba(0, 0, 0, 0.1) !important;
 }
-html.light pre.bg-\[#050505\] {
+
+/* Code blocks inside Nova bubble */
+html.light .nova-msg pre {
   background: #f1f5f9 !important;
   border-color: rgba(0, 0, 0, 0.08) !important;
 }
-html.light pre.bg-\[#050505\] code {
+html.light .nova-msg pre code {
+  background: transparent !important;
   color: #0f172a !important;
 }
+
+/* Model badge text colors — readable on light background */
+html.light .text-green-300  { color: #15803d !important; }
+html.light .text-yellow-300 { color: #b45309 !important; }
+html.light .text-blue-300   { color: #1d4ed8 !important; }
+html.light .text-purple-300 { color: #7e22ce !important; }
+html.light .text-cyan-300   { color: #0e7490 !important; }
+html.light .text-slate-400  { color: #475569 !important; }
 
 /* Scrollbar */
 html.light ::-webkit-scrollbar-track { background: #f0f4f8; }
