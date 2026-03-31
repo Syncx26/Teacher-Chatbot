@@ -282,19 +282,24 @@ All week numbers, project descriptions, and milestones in your answers must come
 ---"""
 
 
-def _rules_block() -> str:
-    return f"""\
-HARD RULES — always follow these:
-
-Stay in the curriculum. Ground technical answers in the spec. If something's outside it, say so first, then supplement.
-
+def _rules_block(use_tools: bool = True) -> str:
+    tool_section = f"""
 {_RESEARCH_DECISION_TREE}
-
-{_EXPLANATION_FORMAT}
 
 {_CONFIDENCE_BLOCK}
 
 Never invent APIs, function signatures, version numbers, or URLs. If you're not sure, say "I'm not sure — let me check" and call web_search.
+
+Tools: only call tools when you actually need them. Read results before calling another tool. If a tool fails, tell the student and suggest an alternative.""" if use_tools else """
+Never invent APIs, function signatures, version numbers, or URLs. If you're not sure, say "I'm not sure — let me check" and recommend they look it up at the official docs."""
+
+    return f"""\
+HARD RULES — always follow these:
+
+Stay in the curriculum. Ground technical answers in the spec. If something's outside it, say so first, then supplement.
+{tool_section}
+
+{_EXPLANATION_FORMAT}
 
 Week gating: if a student asks about a future week topic unprompted, briefly flag it ("that's Week X material") then answer anyway — they're curious, not cheating. Never make them feel bad for asking ahead.
 
@@ -302,9 +307,7 @@ Milestones: when it's clear the student finished a week's core project, celebrat
 
 Wellbeing: if they seem burned out, exhausted, or distressed — stop the technical content. Check in first. A tired brain can't learn anyway.
 
-If the same error or confusion comes up twice — don't repeat yourself louder. Acknowledge the loop explicitly and try a completely different angle.
-
-Tools: only call tools when you actually need them. Read results before calling another tool. If a tool fails, tell the student and suggest an alternative."""
+If the same error or confusion comes up twice — don't repeat yourself louder. Acknowledge the loop explicitly and try a completely different angle."""
 
 
 # ---------------------------------------------------------------------------
@@ -316,6 +319,7 @@ def build_prompt(
     task_type: str = "STRUCTURED_LEARNING",
     memories: list[dict] | None = None,
     curriculum: dict | None = None,
+    use_tools: bool = True,
 ) -> str:
     """
     Build and return the full system prompt string.
@@ -326,6 +330,9 @@ def build_prompt(
     task_type : str             — one of FOUNDATIONAL | STRUCTURED_LEARNING |
                                   REASONING | META_LEARNING | ADMIN
     memories  : list[dict]|None — student memory rows from db.memory.get_memories()
+    use_tools : bool            — whether the model supports Anthropic tool use.
+                                  Set False for OpenRouter/Haiku models to avoid
+                                  them narrating tool calls as plain text.
 
     Returns
     -------
@@ -337,6 +344,6 @@ def build_prompt(
         _persona_block(progress, memories=memories),
         _task_prompt_block(task_type),
         _curriculum_block(custom_weeks=custom_weeks),
-        _rules_block(),
+        _rules_block(use_tools=use_tools),
     ]
     return "\n\n".join(parts)

@@ -220,8 +220,14 @@ async def chat_endpoint(req: ChatRequest):
         # Load active curriculum (custom or default)
         curriculum = get_active_curriculum(req.user_id)
 
+        # Only Claude Sonnet (premium) actually supports tool use via Anthropic API.
+        # All other tiers (free_llama, free_gemma, budget_flash_lite, admin/haiku) go
+        # through OpenRouter or Anthropic without tools — passing tool instructions to
+        # them causes them to narrate tool calls as plain text in their response.
+        supports_tools = model_tier == "premium_sonnet"
+
         # Build fresh system prompt with live progress + memory + curriculum + task mode
-        system_prompt = build_prompt(progress, task_type=task_type, memories=memories, curriculum=curriculum)
+        system_prompt = build_prompt(progress, task_type=task_type, memories=memories, curriculum=curriculum, use_tools=supports_tools)
 
         # Call AI
         result = await chat(gated_message, system_prompt, model_tier, history)
