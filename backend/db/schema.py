@@ -82,4 +82,17 @@ def init_db() -> None:
                 subtopics TEXT DEFAULT '[]',
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
+
+            CREATE TABLE IF NOT EXISTS student_memory (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                memory_type TEXT NOT NULL,
+                topic TEXT NOT NULL,
+                content TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_memory_user
+                ON student_memory(user_id, updated_at);
         """)

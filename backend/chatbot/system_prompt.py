@@ -24,6 +24,7 @@ if str(_HERE) not in sys.path:
     sys.path.insert(0, str(_HERE))
 
 from config import CURRICULUM_SPEC_PATH  # noqa: E402
+from db.memory import format_memories_for_prompt  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Cache curriculum text at module level so it is read only once.
@@ -118,7 +119,7 @@ def _task_prompt_block(task_type: str) -> str:
 # Block builders
 # ---------------------------------------------------------------------------
 
-def _persona_block(progress: dict) -> str:
+def _persona_block(progress: dict, memories: list[dict] | None = None) -> str:
     current_week: int = progress.get("current_week", 1)
     student_name: str = progress.get("student_name", "the student")
     xp: int = progress.get("xp", 0)
@@ -128,6 +129,9 @@ def _persona_block(progress: dict) -> str:
         if completed_weeks
         else "none yet"
     )
+
+    memory_block = format_memories_for_prompt(memories or [])
+    memory_section = f"\n\n{memory_block}" if memory_block else ""
 
     return f"""\
 Your name is Nova. You're the AI tutor inside Synapse X.
@@ -142,7 +146,9 @@ They learn best through video and building, not reading docs. When you explain s
 
 They work in 25-minute Pomodoros. If they seem overwhelmed, offer to cut the task into a single 25-minute piece.
 
-Your job: keep them moving. One concrete step at a time. If they're stuck, don't repeat the same explanation louder — try a different angle. If they're on a roll, match that energy and push further."""
+Your job: keep them moving. One concrete step at a time. If they're stuck, don't repeat the same explanation louder — try a different angle. If they're on a roll, match that energy and push further.{memory_section}
+
+Use the memory above to personalise your responses. Reference past struggles or breakthroughs naturally — don't announce "I remember that..." just act on it. If they're asking about something they previously struggled with, acknowledge the loop. If they're revisiting something they nailed before, skip the basics."""
 
 
 def _curriculum_block() -> str:
@@ -189,23 +195,27 @@ Tools: only call tools when you actually need them. Read results before calling 
 # Public API
 # ---------------------------------------------------------------------------
 
-def build_prompt(progress: dict, task_type: str = "STRUCTURED_LEARNING") -> str:
+def build_prompt(
+    progress: dict,
+    task_type: str = "STRUCTURED_LEARNING",
+    memories: list[dict] | None = None,
+) -> str:
     """
     Build and return the full system prompt string.
 
     Parameters
     ----------
-    progress  : dict — student progress record
-    task_type : str  — one of FOUNDATIONAL | STRUCTURED_LEARNING |
-                       REASONING | META_LEARNING | ADMIN
-                       Injected as a task-specific teaching mode block.
+    progress  : dict            — student progress record
+    task_type : str             — one of FOUNDATIONAL | STRUCTURED_LEARNING |
+                                  REASONING | META_LEARNING | ADMIN
+    memories  : list[dict]|None — student memory rows from db.memory.get_memories()
 
     Returns
     -------
     str — full system prompt ready for Anthropic / OpenRouter API calls
     """
     parts = [
-        _persona_block(progress),
+        _persona_block(progress, memories=memories),
         _task_prompt_block(task_type),
         _curriculum_block(),
         _rules_block(),
