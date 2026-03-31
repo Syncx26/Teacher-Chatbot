@@ -19,6 +19,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -31,7 +32,7 @@ export default function RootLayout({
       <head>
         <link rel="apple-touch-icon" href="/icon.png" />
       </head>
-      <body className="bg-background text-slate-100 font-sans antialiased min-h-screen">
+      <body className="bg-background text-slate-100 font-sans antialiased min-h-screen safe-top">
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

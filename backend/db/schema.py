@@ -95,6 +95,19 @@ def init_db() -> None:
 
             CREATE INDEX IF NOT EXISTS idx_memory_user
                 ON student_memory(user_id, updated_at);
+
+            CREATE TABLE IF NOT EXISTS curriculums (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                goal TEXT NOT NULL,
+                weeks_json TEXT NOT NULL,
+                is_active INTEGER DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_curriculum_user
+                ON curriculums(user_id, is_active);
         """)
 
     # Migrate papers table — idempotent ALTER TABLE guards

@@ -26,8 +26,14 @@ from chatbot.router import classify_request
 from chatbot.claude_client import chat
 from chatbot.prerequisite import get_prerequisite_chain, get_all_topics_with_state
 from db.custom_topics import save_custom_topic, get_custom_topics
-from db.memory import get_relevant_memories
+from db.progress import reset_progress
+from db.memory import get_relevant_memories, format_memories_for_prompt
 from chatbot.memory_extractor import extract_and_save_memories
+from db.curriculum import (
+    get_active_curriculum, list_curriculums, save_curriculum,
+    switch_curriculum, delete_curriculum, count_curriculums,
+)
+from chatbot.curriculum_generator import generate_curriculum
 from research.fetcher import get_papers, get_last_refresh_time, is_stale
 from research.summarizer import get_paper_with_summary
 from research.scheduler import start_scheduler, stop_scheduler, trigger_refresh, startup_check
@@ -107,6 +113,69 @@ def grant_xp(user_id: str, amount: int = 10):
     return {"status": "ok"}
 
 
+class ResetRequest(BaseModel):
+    user_id: str
+
+@app.post("/progress/reset")
+def reset_user_progress(req: ResetRequest):
+    """Reset week/XP/milestones to zero. Memories are preserved."""
+    reset_progress(req.user_id)
+    return get_progress(req.user_id)
+
+
+# ── Curriculum Endpoints ──────────────────────────────────────────────────────
+
+class GenerateCurriculumRequest(BaseModel):
+    user_id: str
+    goal: str
+
+class SaveCurriculumRequest(BaseModel):
+    user_id: str
+    name: str
+    goal: str
+    weeks: list
+    keep_current: bool = True
+
+@app.get("/curriculum/active/{user_id}")
+def get_active_curriculum_endpoint(user_id: str):
+    return get_active_curriculum(user_id)
+
+@app.get("/curriculum/list/{user_id}")
+def list_curriculums_endpoint(user_id: str):
+    return list_curriculums(user_id)
+
+@app.post("/curriculum/generate")
+async def generate_curriculum_endpoint(req: GenerateCurriculumRequest):
+    if count_curriculums(req.user_id) >= 5:
+        raise HTTPException(status_code=400, detail="Maximum 5 curriculums reached. Delete one first.")
+    memories = get_relevant_memories(req.user_id, req.goal)
+    memory_ctx = format_memories_for_prompt(memories) if memories else ""
+    try:
+        plan = await generate_curriculum(req.goal, memory_ctx)
+        return plan
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+@app.post("/curriculum/save")
+def save_curriculum_endpoint(req: SaveCurriculumRequest):
+    curriculum_id = save_curriculum(req.user_id, req.name, req.goal, req.weeks, req.keep_current)
+    reset_progress(req.user_id)
+    curriculum = get_active_curriculum(req.user_id)
+    curriculum["id"] = curriculum_id
+    return curriculum
+
+@app.post("/curriculum/switch/{curriculum_id}")
+def switch_curriculum_endpoint(curriculum_id: int, req: ResetRequest):
+    switch_curriculum(req.user_id, curriculum_id)
+    reset_progress(req.user_id)
+    return get_active_curriculum(req.user_id)
+
+@app.delete("/curriculum/{curriculum_id}")
+def delete_curriculum_endpoint(curriculum_id: int, user_id: str):
+    delete_curriculum(user_id, curriculum_id)
+    return {"status": "deleted"}
+
+
 # ── Topic Endpoints ───────────────────────────────────────────────────────────
 
 @app.get("/topics/{user_id}")
@@ -148,8 +217,11 @@ async def chat_endpoint(req: ChatRequest):
         # Load only relevant memories for this message (cost-efficient)
         memories = get_relevant_memories(req.user_id, req.message)
 
-        # Build fresh system prompt with live progress + memory + task-specific teaching mode
-        system_prompt = build_prompt(progress, task_type=task_type, memories=memories)
+        # Load active curriculum (custom or default)
+        curriculum = get_active_curriculum(req.user_id)
+
+        # Build fresh system prompt with live progress + memory + curriculum + task mode
+        system_prompt = build_prompt(progress, task_type=task_type, memories=memories, curriculum=curriculum)
 
         # Call AI
         result = await chat(gated_message, system_prompt, model_tier, history)
@@ -206,9 +278,9 @@ async def list_papers_endpoint(
 ):
     papers = get_papers(limit=limit, offset=offset, source=source, topic=topic)
     last_refresh = get_last_refresh_time()
-    # Auto-trigger background fetch if DB is empty (first deploy)
+    # Auto-trigger background fetch if DB is empty for this topic (first deploy)
     if not papers and last_refresh is None:
-        asyncio.create_task(trigger_refresh(1))
+        asyncio.create_task(trigger_refresh(1, topic=topic or "ai"))
     return {
         "papers": papers,
         "total": len(papers),
@@ -223,9 +295,9 @@ def get_paper(paper_id: int):
 
 
 @app.post("/papers/refresh")
-async def refresh_papers(req: RefreshRequest):
+async def refresh_papers(req: RefreshRequest, topic: Optional[str] = None):
     progress = get_progress(req.user_id)
-    result = await trigger_refresh(progress["current_week"])
+    result = await trigger_refresh(progress["current_week"], topic=topic)
     return result
 
 

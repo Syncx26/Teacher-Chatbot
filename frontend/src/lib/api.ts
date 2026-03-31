@@ -208,14 +208,85 @@ export async function getPaper(paperId: number): Promise<PaperResponse> {
   return res.json();
 }
 
-export async function refreshPapers(userId: string): Promise<unknown> {
-  const res = await fetch(`${BASE}/papers/refresh`, {
+export async function refreshPapers(userId: string, topic?: string): Promise<unknown> {
+  const url = topic ? `${BASE}/papers/refresh?topic=${topic}` : `${BASE}/papers/refresh`;
+  const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ user_id: userId }),
   });
   if (!res.ok) throw new Error(`refreshPapers failed: ${res.status}`);
   return res.json();
+}
+
+export async function resetProgress(userId: string): Promise<ProgressResponse> {
+  const res = await fetch(`${BASE}/progress/reset`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: userId }),
+  });
+  if (!res.ok) throw new Error(`resetProgress failed: ${res.status}`);
+  return res.json();
+}
+
+// ── Curriculum ────────────────────────────────────────────────────────────────
+
+export async function getActiveCurriculum(userId: string): Promise<unknown> {
+  const res = await fetch(`${BASE}/curriculum/active/${userId}`);
+  if (!res.ok) throw new Error(`getActiveCurriculum failed: ${res.status}`);
+  return res.json();
+}
+
+export async function listCurriculums(userId: string): Promise<unknown[]> {
+  const res = await fetch(`${BASE}/curriculum/list/${userId}`);
+  if (!res.ok) throw new Error(`listCurriculums failed: ${res.status}`);
+  return res.json();
+}
+
+export async function generateCurriculum(userId: string, goal: string): Promise<unknown> {
+  const res = await fetch(`${BASE}/curriculum/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: userId, goal }),
+  });
+  if (!res.ok) {
+    const detail = await res.json().catch(() => ({}));
+    throw new Error(detail.detail || `Generation failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function saveCurriculum(
+  userId: string,
+  name: string,
+  goal: string,
+  weeks: unknown[],
+  keepCurrent: boolean,
+): Promise<unknown> {
+  const res = await fetch(`${BASE}/curriculum/save`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: userId, name, goal, weeks, keep_current: keepCurrent }),
+  });
+  if (!res.ok) throw new Error(`saveCurriculum failed: ${res.status}`);
+  return res.json();
+}
+
+export async function switchCurriculum(userId: string, curriculumId: number): Promise<unknown> {
+  const res = await fetch(`${BASE}/curriculum/switch/${curriculumId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: userId }),
+  });
+  if (!res.ok) throw new Error(`switchCurriculum failed: ${res.status}`);
+  return res.json();
+}
+
+export async function deleteCurriculum(userId: string, curriculumId: number): Promise<void> {
+  const res = await fetch(`${BASE}/curriculum/${curriculumId}?user_id=${userId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error(`deleteCurriculum failed: ${res.status}`);
 }
 
 export async function chatAboutPaper(

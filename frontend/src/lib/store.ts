@@ -30,6 +30,23 @@ export interface Paper {
   tags?: string[];
 }
 
+export interface CurriculumWeek {
+  week: number;
+  name: string;
+  topics: string[];
+  goal: string;
+  build: string;
+}
+
+export interface Curriculum {
+  id?: number | null;
+  name: string;
+  goal: string;
+  weeks: CurriculumWeek[];
+  is_active?: boolean;
+  created_at?: string;
+}
+
 interface AppStore {
   userId: string;
   currentWeek: number;
@@ -40,9 +57,10 @@ interface AppStore {
   papers: Paper[];
   activeTab: "chat" | "research" | "topics" | "curriculum" | "resources";
   isSidebarOpen: boolean;
+  pendingMessage: string;
+  activeCurriculum: Curriculum | null;
   pomodoroActive: boolean;
   pomodoroSeconds: number;
-  pendingMessage: string;
 
   setProgress: (p: { current_week?: number; xp?: number; completed_weeks?: number[] }) => void;
   addMessage: (m: Message) => void;
@@ -50,11 +68,12 @@ interface AppStore {
   setPapers: (p: Paper[]) => void;
   setActiveTab: (tab: "chat" | "research" | "topics" | "curriculum" | "resources") => void;
   toggleSidebar: () => void;
+  setPendingMessage: (msg: string) => void;
+  setCurriculum: (c: Curriculum | null) => void;
   startPomodoro: () => void;
   stopPomodoro: () => void;
   tickPomodoro: () => void;
   resetPomodoro: () => void;
-  setPendingMessage: (msg: string) => void;
 }
 
 function generateUUID(): string {
@@ -84,9 +103,10 @@ export const useAppStore = create<AppStore>((set) => ({
   papers: [],
   activeTab: "chat",
   isSidebarOpen: false,
+  pendingMessage: "",
+  activeCurriculum: null,
   pomodoroActive: false,
   pomodoroSeconds: 1500,
-  pendingMessage: "",
 
   setProgress: (p) =>
     set((state) => ({
@@ -109,15 +129,14 @@ export const useAppStore = create<AppStore>((set) => ({
   toggleSidebar: () =>
     set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
 
+  setCurriculum: (c) => set({ activeCurriculum: c }),
+
   startPomodoro: () => set({ pomodoroActive: true }),
-
   stopPomodoro: () => set({ pomodoroActive: false }),
-
   tickPomodoro: () =>
     set((state) => ({
       pomodoroSeconds: Math.max(0, state.pomodoroSeconds - 1),
       pomodoroActive: state.pomodoroSeconds <= 1 ? false : state.pomodoroActive,
     })),
-
   resetPomodoro: () => set({ pomodoroSeconds: 1500, pomodoroActive: false }),
 }));

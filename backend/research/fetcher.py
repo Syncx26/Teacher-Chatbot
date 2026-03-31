@@ -16,6 +16,7 @@ from config import HF_TOKEN
 from db.schema import get_conn
 from research.pubmed_fetcher import fetch_pubmed
 from research.inspire_fetcher import fetch_inspire_hep
+from research.openalex_fetcher import fetch_openalex
 
 ARXIV_API = "https://export.arxiv.org/api/query"
 ARXIV_NS = "{http://www.w3.org/2005/Atom}"
@@ -205,8 +206,11 @@ async def fetch_all_for_topic(topic: str) -> int:
     Fetch papers for a specific topic tab and save to DB.
     Used by the standalone research reader scheduler.
     """
-    from config import NCBI_EMAIL
+    from config import NCBI_EMAIL, UNPAYWALL_EMAIL
     papers: list[dict] = []
+    # OpenAlex runs for every topic — high quality, no key needed
+    openalex_email = UNPAYWALL_EMAIL or NCBI_EMAIL or ""
+    papers += await fetch_openalex(topic, email=openalex_email)
 
     if topic == "ai":
         papers += await fetch_arxiv_by_category(TOPIC_ARXIV_CATEGORIES["ai"], "ai")
