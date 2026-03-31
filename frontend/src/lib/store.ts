@@ -59,6 +59,8 @@ interface AppStore {
   isSidebarOpen: boolean;
   pendingMessage: string;
   activeCurriculum: Curriculum | null;
+  pomodoroActive: boolean;
+  pomodoroSeconds: number;
 
   setProgress: (p: { current_week?: number; xp?: number; completed_weeks?: number[] }) => void;
   addMessage: (m: Message) => void;
@@ -68,6 +70,10 @@ interface AppStore {
   toggleSidebar: () => void;
   setPendingMessage: (msg: string) => void;
   setCurriculum: (c: Curriculum | null) => void;
+  startPomodoro: () => void;
+  stopPomodoro: () => void;
+  tickPomodoro: () => void;
+  resetPomodoro: () => void;
 }
 
 function generateUUID(): string {
@@ -99,6 +105,8 @@ export const useAppStore = create<AppStore>((set) => ({
   isSidebarOpen: false,
   pendingMessage: "",
   activeCurriculum: null,
+  pomodoroActive: false,
+  pomodoroSeconds: 1500,
 
   setProgress: (p) =>
     set((state) => ({
@@ -122,4 +130,13 @@ export const useAppStore = create<AppStore>((set) => ({
     set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
 
   setCurriculum: (c) => set({ activeCurriculum: c }),
+
+  startPomodoro: () => set({ pomodoroActive: true }),
+  stopPomodoro: () => set({ pomodoroActive: false }),
+  tickPomodoro: () =>
+    set((state) => ({
+      pomodoroSeconds: Math.max(0, state.pomodoroSeconds - 1),
+      pomodoroActive: state.pomodoroSeconds <= 1 ? false : state.pomodoroActive,
+    })),
+  resetPomodoro: () => set({ pomodoroSeconds: 1500, pomodoroActive: false }),
 }));
