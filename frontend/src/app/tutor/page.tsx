@@ -454,7 +454,7 @@ export default function TutorPage() {
               disabled={loading || !input.trim()}
               className="w-12 h-12 bg-primary text-black rounded-xl flex items-center justify-center hover:bg-white disabled:opacity-20 transition-all active:scale-90"
             >
-              <svg className="w-5 h-5 fill-current rotate-90" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
                 <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
               </svg>
             </button>
