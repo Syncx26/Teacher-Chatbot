@@ -3,13 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
-import { ThemeToggle } from "@/components/ThemeProvider";
+import { ThemeToggle, useTheme } from "@/components/ThemeProvider";
 import remarkGfm from "remark-gfm";
 import { useAppStore, Message } from "@/lib/store";
 import { sendMessage, getProgress, getTopics, advanceWeek, getMoreResources, proposeTopic, confirmTopic, MoreResource, TopicProposal } from "@/lib/api";
 import ConfidenceBadge from "@/components/ConfidenceBadge";
 import ModelBadge from "@/components/ModelBadge";
-import PomodoroTimer from "@/components/PomodoroTimer";
 import TopicChip from "@/components/TopicChip";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -94,6 +93,8 @@ const WEEK_RESOURCES: Record<number, { label: string; url: string; type?: string
 };
 
 export default function TutorPage() {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const {
     userId, currentWeek, xp, completedWeeks, messages,
     topics, activeTab, setProgress, addMessage, setTopics, setActiveTab,
@@ -242,43 +243,61 @@ export default function TutorPage() {
   // ── Curriculum Panel ────────────────────────────────────────────────────────
   const CurriculumPanel = (
     <div className="h-full flex flex-col gap-6 p-6">
-      <div className="glass-panel-prism p-6 rounded-2xl relative overflow-hidden group">
-        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-30 transition-opacity">
-          <svg className="w-16 h-16 text-primary" fill="currentColor" viewBox="0 0 24 24">
+      <div className="glass-panel-prism p-8 rounded-2xl relative overflow-hidden group">
+        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-25 transition-opacity">
+          <svg className="w-24 h-24 text-primary" fill="currentColor" viewBox="0 0 24 24">
             <path d="M12 2L1 12h3v9h6v-6h4v6h6v-9h3L12 2z" />
           </svg>
         </div>
-        <div className="text-[10px] font-mono text-primary/60 uppercase tracking-[0.2em] mb-2">Your Progress</div>
+        <div className="text-[10px] font-mono text-primary/60 uppercase tracking-[0.2em] mb-3">Your Progress</div>
+
         <div className="flex items-center justify-between mb-1">
-          <div className="text-4xl font-black text-white leading-none">Wk {viewingWeek}</div>
+          <div className="text-5xl font-black text-white leading-none">Wk {viewingWeek}</div>
           <div className="flex items-center gap-1">
             <button onClick={() => setViewingWeek(w => Math.max(1, w - 1))} disabled={viewingWeek <= 1}
-              className="w-7 h-7 rounded-lg glass-panel-prism flex items-center justify-center text-gray-400 hover:text-primary disabled:opacity-20 transition-all text-xs">‹</button>
+              className="w-8 h-8 rounded-lg glass-panel-prism flex items-center justify-center text-gray-400 hover:text-primary disabled:opacity-20 transition-all text-sm">‹</button>
             <button onClick={() => setViewingWeek(w => Math.min(12, w + 1))} disabled={viewingWeek >= 12}
-              className="w-7 h-7 rounded-lg glass-panel-prism flex items-center justify-center text-gray-400 hover:text-primary disabled:opacity-20 transition-all text-xs">›</button>
+              className="w-8 h-8 rounded-lg glass-panel-prism flex items-center justify-center text-gray-400 hover:text-primary disabled:opacity-20 transition-all text-sm">›</button>
           </div>
         </div>
-        <div className="text-sm font-light text-gray-400 mb-6 uppercase tracking-widest">{WEEK_NAMES[viewingWeek]}{viewingWeek !== currentWeek && <span className="ml-2 text-[9px] text-primary/50 normal-case tracking-normal">(your week: {currentWeek})</span>}</div>
-        
-        <div className="space-y-2">
+        <div className="text-sm font-semibold text-white mb-1 uppercase tracking-widest">{WEEK_NAMES[viewingWeek]}</div>
+        {viewingWeek !== currentWeek && (
+          <div className="text-[9px] text-primary/50 mb-4 font-mono">Browsing — your active week: {currentWeek}</div>
+        )}
+
+        <div className="mt-4 space-y-3">
           <div className="flex justify-between text-[10px] uppercase font-mono">
-            <span className="text-gray-500">Progress</span>
-            <span className="text-primary">{xp} XP</span>
+            <span className="text-gray-500">XP Earned</span>
+            <span className="text-primary font-bold">{xp} / 1200 XP</span>
           </div>
-          <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+          <div className="h-2 bg-white/5 rounded-full overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${xpPercent}%` }}
-              className="h-full bg-gradient-to-r from-primary to-secondary"
+              className="h-full bg-gradient-to-r from-primary to-secondary rounded-full"
             />
           </div>
-          <div className="text-[9px] text-gray-600 font-mono italic">
-            Synchronizing with neural engine... {Math.round(xpPercent)}%
+          <div className="flex justify-between text-[9px] font-mono text-gray-600">
+            <span>{Math.round(xpPercent)}% complete</span>
+            <span>{completedWeeks.length} / 12 weeks done</span>
+          </div>
+        </div>
+
+        <div className="mt-5 grid grid-cols-3 gap-2">
+          <div className="rounded-xl bg-white/5 p-3 text-center">
+            <div className="text-xl font-black text-primary">{currentWeek}</div>
+            <div className="text-[9px] text-gray-500 uppercase tracking-wider font-mono mt-0.5">Current</div>
+          </div>
+          <div className="rounded-xl bg-white/5 p-3 text-center">
+            <div className="text-xl font-black text-secondary">{completedWeeks.length}</div>
+            <div className="text-[9px] text-gray-500 uppercase tracking-wider font-mono mt-0.5">Done</div>
+          </div>
+          <div className="rounded-xl bg-white/5 p-3 text-center">
+            <div className="text-xl font-black text-white">{12 - completedWeeks.length}</div>
+            <div className="text-[9px] text-gray-500 uppercase tracking-wider font-mono mt-0.5">Left</div>
           </div>
         </div>
       </div>
-
-      <PomodoroTimer />
 
       <div>
         <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
@@ -485,7 +504,7 @@ export default function TutorPage() {
 
   // ── Main Responsive Layout ──────────────────────────────────────────────────
   return (
-    <div className="h-dvh flex flex-col cyber-bg text-white overflow-hidden">
+    <div className="h-dvh flex flex-col cyber-bg text-white overflow-hidden safe-top">
       <div className="absolute inset-0 cyber-grid pointer-events-none opacity-20" />
       
       {/* Header (Laptop + Mobile) */}

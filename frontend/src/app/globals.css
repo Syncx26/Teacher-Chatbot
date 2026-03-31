@@ -145,6 +145,11 @@ body {
   padding-bottom: env(safe-area-inset-bottom, 0.5rem);
 }
 
+/* safe-top — safe-area top padding so header isn't hidden under device notch */
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0);
+}
+
 /* ─── Light Mode ──────────────────────────────────────────────────────────── */
 html.light {
   --background: #f0f4f8;

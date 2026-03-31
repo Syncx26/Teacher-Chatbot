@@ -81,7 +81,16 @@ def append_message(
         )
 
 
-def get_session_count_on_week(user_id: str, week: int) -> int:
+def reset_progress(user_id: str) -> None:
+    """Reset a user's progress to week 1. Memories are preserved."""
+    with get_conn() as conn:
+        conn.execute(
+            "UPDATE users SET current_week = 1, xp = 0 WHERE user_id = ?", (user_id,)
+        )
+        conn.execute("DELETE FROM milestones WHERE user_id = ?", (user_id,))
+        conn.execute("DELETE FROM sprint_goals WHERE user_id = ?", (user_id,))
+        # Clear chat history so Nova starts fresh for the new curriculum
+        conn.execute("DELETE FROM messages WHERE user_id = ?", (user_id,))
     """Returns how many sessions the user has had while on this week (for stuck detection)."""
     with get_conn() as conn:
         row = conn.execute(

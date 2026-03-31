@@ -219,6 +219,16 @@ export async function refreshPapers(userId: string, topic?: string): Promise<unk
   return res.json();
 }
 
+export async function resetProgress(userId: string): Promise<ProgressResponse> {
+  const res = await fetch(`${BASE}/progress/reset`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: userId }),
+  });
+  if (!res.ok) throw new Error(`resetProgress failed: ${res.status}`);
+  return res.json();
+}
+
 export async function chatAboutPaper(
   userId: string,
   paperId: number,

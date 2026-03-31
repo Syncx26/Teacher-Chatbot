@@ -26,6 +26,7 @@ from chatbot.router import classify_request
 from chatbot.claude_client import chat
 from chatbot.prerequisite import get_prerequisite_chain, get_all_topics_with_state
 from db.custom_topics import save_custom_topic, get_custom_topics
+from db.progress import reset_progress
 from db.memory import get_relevant_memories
 from chatbot.memory_extractor import extract_and_save_memories
 from research.fetcher import get_papers, get_last_refresh_time, is_stale
@@ -105,6 +106,16 @@ def advance_week(req: AdvanceWeekRequest):
 def grant_xp(user_id: str, amount: int = 10):
     add_xp(user_id, amount)
     return {"status": "ok"}
+
+
+class ResetRequest(BaseModel):
+    user_id: str
+
+@app.post("/progress/reset")
+def reset_user_progress(req: ResetRequest):
+    """Reset week/XP/milestones to zero. Memories are preserved."""
+    reset_progress(req.user_id)
+    return get_progress(req.user_id)
 
 
 # ── Topic Endpoints ───────────────────────────────────────────────────────────
