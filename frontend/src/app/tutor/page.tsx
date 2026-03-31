@@ -403,7 +403,7 @@ export default function TutorPage() {
   // ── Chat Panel ──────────────────────────────────────────────────────────────
   const ChatPanel = (
     <div className="h-full flex flex-col relative">
-      <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-8 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-8 space-y-8 custom-scrollbar">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center px-12 max-w-md mx-auto">
             <div className="w-16 h-16 rounded-full glass-panel-prism flex items-center justify-center text-2xl mb-6 pulse-primary border-primary/20">
@@ -876,8 +876,8 @@ function MessageBubble({ message }: { message: Message }) {
       }`}>
         {isUser ? "YOU" : "NV"}
       </div>
-      <div className={`max-w-[90%] sm:max-w-[75%] ${isUser ? "items-end" : "items-start"} flex flex-col gap-2`}>
-        <div className={`rounded-3xl p-5 sm:p-7 text-sm font-light leading-relaxed tracking-wide shadow-2xl transition-all ${
+      <div className={`max-w-[90%] sm:max-w-[75%] min-w-0 ${isUser ? "items-end" : "items-start"} flex flex-col gap-2`}>
+        <div className={`rounded-3xl p-5 sm:p-7 text-sm font-light leading-relaxed tracking-wide shadow-2xl transition-all min-w-0 w-full ${
           isUser ? "bg-white text-black rounded-tr-none font-medium" : "glass-panel-prism text-gray-200 rounded-tl-none border-white/5"
         }`}>
           {isUser ? (
