@@ -158,7 +158,7 @@ function ResearchPageInner() {
   async function handleBookmark(paperId: number, add: boolean) {
     if (!userId) return;
     if (add) {
-      setBookmarkedIds(prev => new Set([...prev, paperId]));
+      setBookmarkedIds(prev => new Set(Array.from(prev).concat(paperId)));
       await bookmarkPaper(paperId, userId);
     } else {
       setBookmarkedIds(prev => { const s = new Set(prev); s.delete(paperId); return s; });
