@@ -57,12 +57,21 @@ def add_xp(user_id: str, amount: int) -> None:
 def get_conversation_history(user_id: str, limit: int = 20) -> list[dict]:
     with get_conn() as conn:
         rows = conn.execute(
-            """SELECT role, content FROM messages
+            """SELECT role, content, model_tier, confidence_score, created_at FROM messages
                WHERE user_id = ?
                ORDER BY created_at DESC LIMIT ?""",
             (user_id, limit)
         ).fetchall()
-    return [{"role": r["role"], "content": r["content"]} for r in reversed(rows)]
+    return [
+        {
+            "role": r["role"],
+            "content": r["content"],
+            "model_tier": r["model_tier"],
+            "confidence_score": r["confidence_score"],
+            "timestamp": r["created_at"],
+        }
+        for r in reversed(rows)
+    ]
 
 
 def append_message(

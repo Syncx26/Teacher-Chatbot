@@ -269,8 +269,9 @@ async def chat_endpoint(req: ChatRequest):
 
 
 @app.get("/chat/history/{user_id}")
-def get_history(user_id: str, limit: int = 20):
-    return get_conversation_history(user_id, limit)
+def get_history(user_id: str, limit: int = 100):
+    msgs = get_conversation_history(user_id, limit)
+    return {"messages": msgs}
 
 
 # ── Research Paper Endpoints ──────────────────────────────────────────────────
