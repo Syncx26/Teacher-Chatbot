@@ -5,8 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import { ThemeToggle, useTheme } from "@/components/ThemeProvider";
 import remarkGfm from "remark-gfm";
-import { useAppStore, Message } from "@/lib/store";
-import { sendMessage, getProgress, getTopics, advanceWeek, getMoreResources, proposeTopic, confirmTopic, MoreResource, TopicProposal } from "@/lib/api";
+import { useAppStore, Message, Curriculum } from "@/lib/store";
+import { sendMessage, getProgress, getTopics, advanceWeek, getMoreResources, proposeTopic, confirmTopic, getActiveCurriculum, MoreResource, TopicProposal } from "@/lib/api";
 import ConfidenceBadge from "@/components/ConfidenceBadge";
 import ModelBadge from "@/components/ModelBadge";
 import TopicChip from "@/components/TopicChip";
@@ -14,8 +14,8 @@ import TopicChip from "@/components/TopicChip";
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Tab = "curriculum" | "chat" | "resources";
 
-// ─── Week topic labels ────────────────────────────────────────────────────────
-const WEEK_NAMES: Record<number, string> = {
+// ─── Default week labels (used when no custom curriculum is active) ───────────
+const DEFAULT_WEEK_NAMES: Record<number, string> = {
   1: "Python & JSON", 2: "REST APIs", 3: "SQLite", 4: "LLM API",
   5: "RAG", 6: "LangGraph", 7: "LangSmith", 8: "MCP",
   9: "Multi-Agent", 10: "Autonomous", 11: "Dashboard", 12: "Ship It",
@@ -98,7 +98,13 @@ export default function TutorPage() {
   const {
     userId, currentWeek, xp, completedWeeks, messages,
     topics, activeTab, setProgress, addMessage, setTopics, setActiveTab,
+    activeCurriculum, setCurriculum,
   } = useAppStore();
+
+  // Build week name map — use active curriculum if set, else defaults
+  const WEEK_NAMES: Record<number, string> = activeCurriculum?.weeks
+    ? Object.fromEntries(activeCurriculum.weeks.map((w) => [w.week, w.name]))
+    : DEFAULT_WEEK_NAMES;
 
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -128,7 +134,10 @@ export default function TutorPage() {
     if (!userId) return;
     getProgress(userId).then(setProgress).catch(console.error);
     getTopics(userId).then((ts) => setTopics(ts.map((t) => ({ ...t, label: t.label ?? t.name })))).catch(console.error);
-  }, [userId, setProgress, setTopics]);
+    if (!activeCurriculum) {
+      getActiveCurriculum(userId).then((c) => setCurriculum(c as Curriculum)).catch(console.error);
+    }
+  }, [userId, setProgress, setTopics]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-send any message queued from the home page
   useEffect(() => {
@@ -353,6 +362,12 @@ export default function TutorPage() {
           className="mt-4 w-full py-3 rounded-xl text-[10px] font-mono uppercase tracking-widest text-primary/70 hover:text-primary transition-all border border-dashed border-primary/20 hover:border-primary/50 hover:bg-primary/5"
         >
           + Add Custom Topic
+        </button>
+        <button
+          onClick={() => window.location.href = "/curriculum"}
+          className="mt-2 w-full py-3 rounded-xl text-[10px] font-mono uppercase tracking-widest text-gray-600 hover:text-primary/70 transition-all hover:bg-white/5"
+        >
+          ⬡ Manage Curriculums
         </button>
       </div>
     </div>
