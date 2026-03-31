@@ -12,6 +12,13 @@ from db.schema import get_conn
 
 _client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
+TOPIC_CONTEXT: dict[str, str] = {
+    "ai":      "This is an AI/ML research paper.",
+    "physics": "This is a physics research paper. The reader may not have a physics or maths background — explain field-specific concepts clearly.",
+    "tech":    "This is a computer science or software engineering paper.",
+    "medical": "This is a medical or biomedical research paper. Explain all clinical and biological terms in plain English.",
+}
+
 SUMMARY_SYSTEM_PROMPT = """You are an expert at making dense AI research papers accessible to beginners.
 The student you're explaining to knows Python basics and is learning to build AI systems.
 They have ADHD — so your summaries must be scannable, punchy, and broken into clear sections.
@@ -49,11 +56,13 @@ Write a summary with these exact sections:
 
 def generate_summary(paper: dict) -> str:
     """Generate an easy-to-read summary for a paper. Uses Claude Sonnet."""
-    prompt = SUMMARY_TEMPLATE.format(
+    topic_prefix = TOPIC_CONTEXT.get(paper.get("topic", "ai"), "")
+    base_prompt = SUMMARY_TEMPLATE.format(
         title=paper.get("title", ""),
         authors=paper.get("authors", "Unknown"),
         abstract=paper.get("abstract", "No abstract available"),
     )
+    prompt = f"{topic_prefix}\n\n{base_prompt}".strip() if topic_prefix else base_prompt
 
     response = _client.messages.create(
         model=MODEL_SONNET,

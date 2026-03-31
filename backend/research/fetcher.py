@@ -14,6 +14,8 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import HF_TOKEN
 from db.schema import get_conn
+from research.pubmed_fetcher import fetch_pubmed
+from research.inspire_fetcher import fetch_inspire_hep
 
 ARXIV_API = "https://export.arxiv.org/api/query"
 ARXIV_NS = "{http://www.w3.org/2005/Atom}"
@@ -40,6 +42,12 @@ ALWAYS_ON_QUERIES = [
     "AI agents autonomous systems",
     "transformer architecture advances",
 ]
+
+TOPIC_ARXIV_CATEGORIES: dict[str, list[str]] = {
+    "ai":      ["cs.AI", "cs.LG", "cs.CL", "stat.ML", "cs.CV", "cs.NE"],
+    "physics": ["hep-th", "hep-ph", "cond-mat", "quant-ph", "gr-qc", "astro-ph.HE"],
+    "tech":    ["cs.SE", "cs.DC", "cs.CR", "cs.NI", "cs.AR", "cs.PL"],
+}
 
 
 def _week_to_queries(current_week: int) -> list[str]:
@@ -146,6 +154,85 @@ async def fetch_papers_with_code(query: str) -> list[dict]:
     return papers
 
 
+async def fetch_arxiv_by_category(
+    categories: list[str],
+    topic: str,
+    max_results: int = 15,
+) -> list[dict]:
+    """Fetch ArXiv papers by section category codes (e.g. cs.AI, hep-th)."""
+    cat_query = " OR ".join(f"cat:{c}" for c in categories)
+    params = {
+        "search_query": cat_query,
+        "sortBy": "submittedDate",
+        "sortOrder": "descending",
+        "max_results": max_results,
+    }
+    papers = []
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            resp = await client.get(ARXIV_API, params=params)
+            resp.raise_for_status()
+        root = ET.fromstring(resp.text)
+        for entry in root.findall(f"{ARXIV_NS}entry"):
+            arxiv_id = (entry.findtext(f"{ARXIV_NS}id") or "").split("/")[-1]
+            title = (entry.findtext(f"{ARXIV_NS}title") or "").strip().replace("\n", " ")
+            abstract = (entry.findtext(f"{ARXIV_NS}summary") or "").strip()[:500]
+            published = (entry.findtext(f"{ARXIV_NS}published") or "")[:10]
+            url = entry.findtext(f"{ARXIV_NS}id") or ""
+            authors = ", ".join(
+                a.findtext(f"{ARXIV_NS}name") or ""
+                for a in entry.findall(f"{ARXIV_NS}author")[:3]
+            )
+            papers.append({
+                "arxiv_id": arxiv_id,
+                "title": title,
+                "authors": authors,
+                "abstract": abstract,
+                "url": url,
+                "published_date": published,
+                "source": "arxiv",
+                "topic": topic,
+                "doi": "",
+                "topics": ",".join(categories[:3]),
+            })
+    except Exception as e:
+        print(f"ArXiv category fetch error for {categories}: {e}")
+    return papers
+
+
+async def fetch_all_for_topic(topic: str) -> int:
+    """
+    Fetch papers for a specific topic tab and save to DB.
+    Used by the standalone research reader scheduler.
+    """
+    from config import NCBI_EMAIL
+    papers: list[dict] = []
+
+    if topic == "ai":
+        papers += await fetch_arxiv_by_category(TOPIC_ARXIV_CATEGORIES["ai"], "ai")
+        papers += await fetch_hf_daily_papers()
+        pwc = await fetch_papers_with_code("large language models")
+        for p in pwc:
+            p["topic"] = "ai"
+        papers += pwc
+
+    elif topic == "physics":
+        papers += await fetch_arxiv_by_category(TOPIC_ARXIV_CATEGORIES["physics"], "physics")
+        papers += await fetch_inspire_hep()
+
+    elif topic == "tech":
+        papers += await fetch_arxiv_by_category(TOPIC_ARXIV_CATEGORIES["tech"], "tech")
+        pwc = await fetch_papers_with_code("software engineering systems")
+        for p in pwc:
+            p["topic"] = "tech"
+        papers += pwc
+
+    elif topic == "medical":
+        papers += await fetch_pubmed(email=NCBI_EMAIL)
+
+    return save_papers_to_db(papers)
+
+
 def save_papers_to_db(papers: list[dict]) -> int:
     """Insert papers into DB, skip duplicates. Returns count added."""
     added = 0
@@ -156,8 +243,8 @@ def save_papers_to_db(papers: list[dict]) -> int:
             try:
                 conn.execute(
                     """INSERT OR IGNORE INTO papers
-                       (arxiv_id, title, authors, abstract, url, published_date, source, topics)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                       (arxiv_id, title, authors, abstract, url, published_date, source, topics, topic, doi)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (
                         p.get("arxiv_id", ""),
                         p["title"],
@@ -167,6 +254,8 @@ def save_papers_to_db(papers: list[dict]) -> int:
                         p.get("published_date", ""),
                         p.get("source", ""),
                         p.get("topics", ""),
+                        p.get("topic", "ai"),
+                        p.get("doi", ""),
                     ),
                 )
                 if conn.execute("SELECT changes()").fetchone()[0]:
@@ -223,13 +312,30 @@ def is_stale(threshold_hours: int = 24) -> bool:
     return datetime.utcnow() - last > timedelta(hours=threshold_hours)
 
 
-def get_papers(limit: int = 50, offset: int = 0, source: Optional[str] = None) -> list[dict]:
+def get_papers(
+    limit: int = 50,
+    offset: int = 0,
+    source: Optional[str] = None,
+    topic: Optional[str] = None,
+) -> list[dict]:
     with get_conn() as conn:
-        if source:
+        if source and topic:
+            rows = conn.execute(
+                """SELECT * FROM papers WHERE source = ? AND topic = ?
+                   ORDER BY published_date DESC LIMIT ? OFFSET ?""",
+                (source, topic, limit, offset),
+            ).fetchall()
+        elif source:
             rows = conn.execute(
                 """SELECT * FROM papers WHERE source = ?
                    ORDER BY published_date DESC LIMIT ? OFFSET ?""",
                 (source, limit, offset),
+            ).fetchall()
+        elif topic:
+            rows = conn.execute(
+                """SELECT * FROM papers WHERE topic = ?
+                   ORDER BY published_date DESC LIMIT ? OFFSET ?""",
+                (topic, limit, offset),
             ).fetchall()
         else:
             rows = conn.execute(

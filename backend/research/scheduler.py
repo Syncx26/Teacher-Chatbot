@@ -8,7 +8,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from research.fetcher import fetch_all_papers, is_stale
+from research.fetcher import fetch_all_papers, fetch_all_for_topic, is_stale
 
 _scheduler: AsyncIOScheduler | None = None
 _current_week_getter = lambda: 1  # replaced at startup by main.py
@@ -19,11 +19,23 @@ def set_week_getter(fn):
     _current_week_getter = fn
 
 
+async def refresh_all_topics() -> int:
+    """Fetch papers for all 4 topic tabs. Used by the scheduled job."""
+    total = 0
+    for topic in ["ai", "physics", "tech", "medical"]:
+        print(f"[scheduler] Fetching topic: {topic}...")
+        added = await fetch_all_for_topic(topic)
+        print(f"[scheduler] Topic '{topic}': added {added} papers.")
+        total += added
+        await asyncio.sleep(5)
+    return total
+
+
 async def _refresh_job():
     week = _current_week_getter()
-    print(f"[scheduler] Auto-refreshing papers for week {week}...")
-    added = await fetch_all_papers(week)
-    print(f"[scheduler] Added {added} new papers.")
+    print(f"[scheduler] Auto-refreshing all topics (week context: {week})...")
+    total = await refresh_all_topics()
+    print(f"[scheduler] Refresh complete — {total} new papers total.")
 
 
 def start_scheduler():

@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from config import DB_PATH
-from db.schema import init_db
+from db.schema import init_db, get_conn
 from db.progress import (
     get_progress, set_current_week, mark_milestone_complete,
     get_conversation_history, append_message, add_xp, save_sprint_goal
@@ -31,6 +31,8 @@ from chatbot.memory_extractor import extract_and_save_memories
 from research.fetcher import get_papers, get_last_refresh_time, is_stale
 from research.summarizer import get_paper_with_summary
 from research.scheduler import start_scheduler, stop_scheduler, trigger_refresh, startup_check
+from research.semantic_scholar import get_related_papers, get_fulltext_url
+from config import SEMANTIC_SCHOLAR_API_KEY, UNPAYWALL_EMAIL
 
 
 # ── Lifespan ──────────────────────────────────────────────────────────────────
@@ -200,8 +202,9 @@ async def list_papers_endpoint(
     limit: int = 20,
     offset: int = 0,
     source: Optional[str] = None,
+    topic: Optional[str] = None,
 ):
-    papers = get_papers(limit=limit, offset=offset, source=source)
+    papers = get_papers(limit=limit, offset=offset, source=source, topic=topic)
     last_refresh = get_last_refresh_time()
     # Auto-trigger background fetch if DB is empty (first deploy)
     if not papers and last_refresh is None:
@@ -224,6 +227,62 @@ async def refresh_papers(req: RefreshRequest):
     progress = get_progress(req.user_id)
     result = await trigger_refresh(progress["current_week"])
     return result
+
+
+class BookmarkRequest(BaseModel):
+    user_id: str
+
+@app.post("/papers/{paper_id}/bookmark")
+def add_bookmark(paper_id: int, req: BookmarkRequest):
+    with get_conn() as conn:
+        conn.execute(
+            "INSERT OR IGNORE INTO bookmarks (user_id, paper_id) VALUES (?, ?)",
+            (req.user_id, paper_id),
+        )
+    return {"bookmarked": True}
+
+@app.delete("/papers/{paper_id}/bookmark")
+def remove_bookmark(paper_id: int, req: BookmarkRequest):
+    with get_conn() as conn:
+        conn.execute(
+            "DELETE FROM bookmarks WHERE user_id = ? AND paper_id = ?",
+            (req.user_id, paper_id),
+        )
+    return {"bookmarked": False}
+
+@app.get("/papers/bookmarks/{user_id}")
+def get_user_bookmarks(user_id: str):
+    with get_conn() as conn:
+        rows = conn.execute(
+            """SELECT p.* FROM papers p
+               JOIN bookmarks b ON p.id = b.paper_id
+               WHERE b.user_id = ?
+               ORDER BY b.created_at DESC""",
+            (user_id,),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+@app.get("/papers/{paper_id}/related")
+async def related_papers(paper_id: int):
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT arxiv_id FROM papers WHERE id = ?", (paper_id,)
+        ).fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Paper not found")
+    results = await get_related_papers(row["arxiv_id"], api_key=SEMANTIC_SCHOLAR_API_KEY)
+    return {"related": results}
+
+@app.get("/papers/{paper_id}/fulltext")
+async def paper_fulltext(paper_id: int):
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT doi FROM papers WHERE id = ?", (paper_id,)
+        ).fetchone()
+    if not row or not row["doi"]:
+        return {"pdf_url": None, "oa_status": "no_doi"}
+    pdf_url = await get_fulltext_url(row["doi"], email=UNPAYWALL_EMAIL)
+    return {"pdf_url": pdf_url, "oa_status": "open" if pdf_url else "closed"}
 
 
 # ── Chat About Paper Endpoint ─────────────────────────────────────────────────

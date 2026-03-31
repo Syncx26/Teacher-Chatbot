@@ -96,3 +96,25 @@ def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_memory_user
                 ON student_memory(user_id, updated_at);
         """)
+
+    # Migrate papers table — idempotent ALTER TABLE guards
+    with get_conn() as conn:
+        for sql in [
+            "ALTER TABLE papers ADD COLUMN topic TEXT DEFAULT 'ai'",
+            "ALTER TABLE papers ADD COLUMN doi TEXT DEFAULT NULL",
+            "ALTER TABLE papers ADD COLUMN citation_count INTEGER DEFAULT NULL",
+        ]:
+            try:
+                conn.execute(sql)
+            except Exception:
+                pass
+        conn.executescript("""
+            CREATE TABLE IF NOT EXISTS bookmarks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                paper_id INTEGER NOT NULL REFERENCES papers(id) ON DELETE CASCADE,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, paper_id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_bookmarks_user ON bookmarks(user_id);
+        """)

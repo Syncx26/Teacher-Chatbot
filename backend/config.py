@@ -35,3 +35,6 @@ MAX_TOKENS = int(os.getenv("MAX_TOKENS", "2048"))
 
 _spec_path = os.getenv("CURRICULUM_SPEC_PATH", "../warroom-curriculum-spec.md")
 CURRICULUM_SPEC_PATH = Path(__file__).parent / _spec_path
+
+NCBI_EMAIL = os.getenv("NCBI_EMAIL", "")
+UNPAYWALL_EMAIL = os.getenv("UNPAYWALL_EMAIL", "")
