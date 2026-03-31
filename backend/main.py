@@ -26,7 +26,7 @@ from chatbot.router import classify_request
 from chatbot.claude_client import chat
 from chatbot.prerequisite import get_prerequisite_chain, get_all_topics_with_state
 from db.custom_topics import save_custom_topic, get_custom_topics
-from db.memory import get_memories
+from db.memory import get_relevant_memories
 from chatbot.memory_extractor import extract_and_save_memories
 from research.fetcher import get_papers, get_last_refresh_time, is_stale
 from research.summarizer import get_paper_with_summary
@@ -143,8 +143,8 @@ async def chat_endpoint(req: ChatRequest):
         model_tier = route["tier"]
         task_type = route["task_type"]
 
-        # Load persistent student memory (curriculum-independent)
-        memories = get_memories(req.user_id)
+        # Load only relevant memories for this message (cost-efficient)
+        memories = get_relevant_memories(req.user_id, req.message)
 
         # Build fresh system prompt with live progress + memory + task-specific teaching mode
         system_prompt = build_prompt(progress, task_type=task_type, memories=memories)

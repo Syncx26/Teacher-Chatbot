@@ -49,6 +49,54 @@ def get_memories(user_id: str, limit: int = 40) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def get_relevant_memories(user_id: str, message: str, limit: int = 10) -> list[dict]:
+    """
+    Return only memories relevant to the current message.
+
+    Strategy (no extra API calls):
+      1. Always include: recent struggles (≤3) + all goals — high signal, low count
+      2. Add any memories whose topic keywords appear in the message
+      3. Cap at `limit` total to keep token cost low (~300 tokens max)
+    """
+    all_memories = get_memories(user_id, limit=100)
+    if not all_memories:
+        return []
+
+    msg_lower = message.lower()
+    msg_words = set(msg_lower.split())
+
+    always: list[dict] = []
+    topic_match: list[dict] = []
+    rest: list[dict] = []
+
+    for m in all_memories:
+        if m["memory_type"] in ("struggle", "goal"):
+            always.append(m)
+        elif any(
+            word in msg_lower
+            for word in m["topic"].lower().split()
+            if len(word) > 3  # skip short stop-words
+        ):
+            topic_match.append(m)
+        else:
+            rest.append(m)
+
+    # Combine: pinned always-items first, then topic matches, then recents
+    combined = always[:4] + topic_match[:4] + rest[:2]
+    # Deduplicate while preserving order
+    seen: set[int] = set()
+    result: list[dict] = []
+    for m in combined:
+        key = (m["memory_type"], m["topic"])
+        if key not in seen:
+            seen.add(key)
+            result.append(m)
+        if len(result) >= limit:
+            break
+
+    return result
+
+
 def format_memories_for_prompt(memories: list[dict]) -> str:
     """Format memories into a concise block to inject into the system prompt."""
     if not memories:
