@@ -1,5 +1,9 @@
 import sqlite3
+from pathlib import Path
 from config import DB_PATH
+
+# Ensure the directory exists (important for Railway Volume path /app/data/)
+Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
 
 
 def get_conn() -> sqlite3.Connection:

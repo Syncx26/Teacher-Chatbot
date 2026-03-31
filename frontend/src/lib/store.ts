@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 export interface Message {
   role: "user" | "assistant";
@@ -94,52 +95,68 @@ function getOrCreateUserId(): string {
   return newId;
 }
 
-export const useAppStore = create<AppStore>((set) => ({
-  userId: getOrCreateUserId(),
-  currentWeek: 1,
-  xp: 0,
-  completedWeeks: [],
-  messages: [],
-  topics: [],
-  papers: [],
-  activeTab: "chat",
-  isSidebarOpen: false,
-  pendingMessage: "",
-  activeCurriculum: null,
-  pomodoroActive: false,
-  pomodoroSeconds: 1500,
+export const useAppStore = create<AppStore>()(
+  persist(
+    (set) => ({
+      userId: getOrCreateUserId(),
+      currentWeek: 1,
+      xp: 0,
+      completedWeeks: [],
+      messages: [],
+      topics: [],
+      papers: [],
+      activeTab: "chat",
+      isSidebarOpen: false,
+      pendingMessage: "",
+      activeCurriculum: null,
+      pomodoroActive: false,
+      pomodoroSeconds: 1500,
 
-  setProgress: (p) =>
-    set((state) => ({
-      currentWeek: p.current_week ?? state.currentWeek,
-      xp: p.xp ?? state.xp,
-      completedWeeks: p.completed_weeks ?? state.completedWeeks,
-    })),
+      setProgress: (p) =>
+        set((state) => ({
+          currentWeek: p.current_week ?? state.currentWeek,
+          xp: p.xp ?? state.xp,
+          completedWeeks: p.completed_weeks ?? state.completedWeeks,
+        })),
 
-  setMessages: (msgs) => set({ messages: msgs }),
+      setMessages: (msgs) => set({ messages: msgs }),
 
-  addMessage: (m) =>
-    set((state) => ({ messages: [...state.messages, m] })),
+      addMessage: (m) =>
+        set((state) => ({ messages: [...state.messages, m] })),
 
-  setTopics: (t) => set({ topics: t }),
+      setTopics: (t) => set({ topics: t }),
 
-  setPapers: (p) => set({ papers: p }),
+      setPapers: (p) => set({ papers: p }),
 
-  setActiveTab: (tab) => set({ activeTab: tab }),
+      setActiveTab: (tab) => set({ activeTab: tab }),
 
-  setPendingMessage: (msg) => set({ pendingMessage: msg }),
+      setPendingMessage: (msg) => set({ pendingMessage: msg }),
 
-  toggleSidebar: () =>
-    set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
+      toggleSidebar: () =>
+        set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
 
-  setCurriculum: (c) => set({ activeCurriculum: c }),
+      setCurriculum: (c) => set({ activeCurriculum: c }),
 
-  startPomodoro: () => set({ pomodoroActive: true }),
-  stopPomodoro: () => set({ pomodoroActive: false }),
-  tickPomodoro: () =>
-    set((state) => ({
-      pomodoroSeconds: Math.max(0, state.pomodoroSeconds - 1),
-      pomodoroActive: state.pomodoroSeconds <= 1 ? false : state.pomodoroActive,
-    })),
-  resetPomodoro: () => set({ pomodoroSeconds: 1500, pomodoroActive: false }),
-}));
+      startPomodoro: () => set({ pomodoroActive: true }),
+      stopPomodoro: () => set({ pomodoroActive: false }),
+      tickPomodoro: () =>
+        set((state) => ({
+          pomodoroSeconds: Math.max(0, state.pomodoroSeconds - 1),
+          pomodoroActive: state.pomodoroSeconds <= 1 ? false : state.pomodoroActive,
+        })),
+      resetPomodoro: () => set({ pomodoroSeconds: 1500, pomodoroActive: false }),
+    }),
+    {
+      name: "synapse-store",
+      // Only persist what matters across sessions — skip transient UI state
+      partialize: (state) => ({
+        userId: state.userId,
+        messages: state.messages,
+        currentWeek: state.currentWeek,
+        xp: state.xp,
+        completedWeeks: state.completedWeeks,
+        activeCurriculum: state.activeCurriculum,
+      }),
+    }
+  )
+);

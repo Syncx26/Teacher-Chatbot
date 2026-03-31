@@ -14,7 +14,9 @@ SEMANTIC_SCHOLAR_API_KEY = os.getenv("SEMANTIC_SCHOLAR_API_KEY", "")
 # OpenRouter — free + budget model access (openrouter.ai)
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 
-DB_PATH = os.getenv("DB_PATH", "./chatbot.db")
+# DB path — defaults to /app/data/chatbot.db so a Railway Volume mounted at
+# /app/data persists the database across deployments. Override via DB_PATH env var.
+DB_PATH = os.getenv("DB_PATH", "/app/data/chatbot.db")
 
 # Anthropic models
 MODEL_HAIKU = os.getenv("MODEL_HAIKU", "claude-haiku-4-5-20251001")
