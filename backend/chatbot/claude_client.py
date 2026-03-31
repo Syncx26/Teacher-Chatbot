@@ -118,8 +118,10 @@ async def _call_openrouter(model: str, system_prompt: str, messages: list[dict])
             resp.raise_for_status()
             data = resp.json()
         return data["choices"][0]["message"]["content"]
-    except (httpx.ProxyError, httpx.ConnectError, httpx.TimeoutException):
-        # Network unreachable (proxy, firewall, outage) — fall back to Haiku
+    except (httpx.ProxyError, httpx.ConnectError, httpx.TimeoutException,
+            httpx.HTTPStatusError, KeyError, IndexError):
+        # Network unreachable, bad API key, model unavailable, or unexpected response
+        # — fall back to Claude Haiku via Anthropic
         return await _run_tool_loop(
             model=MODEL_HAIKU,
             system_prompt=system_prompt,

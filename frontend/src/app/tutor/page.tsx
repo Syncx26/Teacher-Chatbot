@@ -148,8 +148,9 @@ export default function TutorPage() {
         });
         setPostCheck(res.post_check || {});
       })
-      .catch(() => {
-        addMessage({ role: "assistant", content: "⚠️ Backend unreachable — make sure the backend is running on port 8000 and your API keys are valid in `backend/.env`.", timestamp: new Date().toISOString() });
+      .catch((e: unknown) => {
+        const msg = e instanceof Error ? e.message : String(e);
+        addMessage({ role: "assistant", content: `⚠️ Request failed: ${msg}`, timestamp: new Date().toISOString() });
       })
       .finally(() => setLoading(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -174,8 +175,9 @@ export default function TutorPage() {
         timestamp: new Date().toISOString(),
       });
       setPostCheck(res.post_check || {});
-    } catch (e) {
-      addMessage({ role: "assistant", content: "⚠️ Backend unreachable — make sure the backend is running on port 8000 and your API keys are valid in `backend/.env`.", timestamp: new Date().toISOString() });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      addMessage({ role: "assistant", content: `⚠️ Request failed: ${msg}`, timestamp: new Date().toISOString() });
     } finally {
       setLoading(false);
     }
