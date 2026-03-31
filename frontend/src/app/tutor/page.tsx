@@ -112,6 +112,10 @@ export default function TutorPage() {
   const [moreResources, setMoreResources] = useState<MoreResource[]>([]);
   const [resourcesLoading, setResourcesLoading] = useState(false);
 
+  // Dynamic resources for custom curriculum (keyed by week number)
+  const [customResources, setCustomResources] = useState<Record<number, MoreResource[]>>({});
+  const [customLoading, setCustomLoading] = useState<Record<number, boolean>>({});
+
   // Add Custom Topic
   type AddStep = "input" | "proposal" | "questions" | "done";
   const [addOpen, setAddOpen] = useState(false);
@@ -158,6 +162,26 @@ export default function TutorPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Clear cached resources whenever curriculum changes
+  useEffect(() => {
+    setCustomResources({});
+    setCustomLoading({});
+  }, [activeCurriculum?.id]);
+
+  // Fetch resources dynamically when a custom curriculum is active
+  useEffect(() => {
+    if (!activeCurriculum?.id || !userId) return;
+    if (customResources[viewingWeek] || customLoading[viewingWeek]) return;
+    const weekData = activeCurriculum.weeks.find((w) => w.week === viewingWeek);
+    if (!weekData) return;
+    setCustomLoading((prev) => ({ ...prev, [viewingWeek]: true }));
+    const topicStr = `${weekData.name}: ${weekData.topics.join(", ")}`;
+    getMoreResources(userId, topicStr, viewingWeek)
+      .then((res) => setCustomResources((prev) => ({ ...prev, [viewingWeek]: res })))
+      .catch(console.error)
+      .finally(() => setCustomLoading((prev) => ({ ...prev, [viewingWeek]: false })));
+  }, [viewingWeek, activeCurriculum?.id, userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSend(overrideMsg?: string) {
     const userMsg = overrideMsg ?? input.trim();
@@ -235,7 +259,10 @@ export default function TutorPage() {
   }
 
   const currentTopics = topics.filter((t) => t.week === viewingWeek);
+  const isCustomCurriculum = !!activeCurriculum?.id;
   const weekResources = WEEK_RESOURCES[viewingWeek] || [];
+  const currentCustomResources = customResources[viewingWeek] ?? [];
+  const isCustomResourcesLoading = !!customLoading[viewingWeek];
   const xpPercent = Math.min((xp / 1200) * 100, 100);
 
   // ── Curriculum Panel ────────────────────────────────────────────────────────
@@ -442,49 +469,99 @@ export default function TutorPage() {
             Find More
           </button>
         </div>
-        <div className="space-y-3">
-          {weekResources.map((r, i) => (
-            <a key={i} href={r.url} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-4 p-4 glass-panel-prism rounded-2xl hover:bg-white/5 transition-all group border-white/5"
-            >
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform text-sm ${r.type === "video" ? "bg-secondary/10 text-secondary" : r.type === "docs" ? "bg-primary/10 text-primary" : "bg-white/5 text-gray-400"}`}>
-                {r.type === "video" ? "▶" : r.type === "docs" ? "◆" : "◈"}
+
+        {/* Custom curriculum: dynamic resources */}
+        {isCustomCurriculum ? (
+          <div className="space-y-3">
+            {isCustomResourcesLoading ? (
+              <>
+                <div className="text-[9px] font-mono text-primary/50 uppercase tracking-widest mb-3">Fetching resources...</div>
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="h-16 rounded-2xl bg-white/5 animate-pulse" />
+                ))}
+              </>
+            ) : currentCustomResources.length > 0 ? (
+              currentCustomResources.map((r, i) => (
+                <a key={i} href={r.url} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-4 p-4 glass-panel-prism rounded-2xl hover:bg-white/5 transition-all group border-white/5"
+                >
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform text-sm flex-shrink-0 ${r.type === "video" ? "bg-secondary/10 text-secondary" : "bg-primary/10 text-primary"}`}>
+                    {r.type === "video" ? "▶" : "◆"}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-white group-hover:text-primary transition-colors leading-tight mb-0.5 line-clamp-2">
+                      {r.title}
+                    </div>
+                    {r.description && (
+                      <div className="text-[9px] font-mono text-gray-600 uppercase truncate">{r.description.slice(0, 60)}</div>
+                    )}
+                  </div>
+                </a>
+              ))
+            ) : (
+              <div className="py-8 text-center">
+                <div className="text-[10px] font-mono text-gray-600">No resources loaded yet.</div>
+                <button
+                  onClick={() => {
+                    setCustomLoading((prev) => ({ ...prev, [viewingWeek]: false }));
+                    setCustomResources((prev) => { const next = { ...prev }; delete next[viewingWeek]; return next; });
+                  }}
+                  className="mt-3 text-[9px] font-mono text-primary/60 hover:text-primary underline"
+                >
+                  Retry
+                </button>
               </div>
-              <div className="min-w-0">
-                <div className="text-xs font-bold text-white group-hover:text-primary transition-colors leading-tight mb-0.5 truncate">
-                  {r.label.split(" — ")[1] || r.label}
+            )}
+          </div>
+        ) : (
+          /* Default curriculum: hardcoded resources */
+          <div className="space-y-3">
+            {weekResources.map((r, i) => (
+              <a key={i} href={r.url} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-4 p-4 glass-panel-prism rounded-2xl hover:bg-white/5 transition-all group border-white/5"
+              >
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform text-sm ${r.type === "video" ? "bg-secondary/10 text-secondary" : r.type === "docs" ? "bg-primary/10 text-primary" : "bg-white/5 text-gray-400"}`}>
+                  {r.type === "video" ? "▶" : r.type === "docs" ? "◆" : "◈"}
                 </div>
-                <div className="text-[9px] font-mono text-gray-600 uppercase">
-                  {r.label.split(" — ")[0]}
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-white group-hover:text-primary transition-colors leading-tight mb-0.5 truncate">
+                    {r.label.split(" — ")[1] || r.label}
+                  </div>
+                  <div className="text-[9px] font-mono text-gray-600 uppercase">
+                    {r.label.split(" — ")[0]}
+                  </div>
                 </div>
-              </div>
-            </a>
-          ))}
-        </div>
+              </a>
+            ))}
+          </div>
+        )}
       </div>
 
-      <div className="pt-6 border-t border-white/5">
-        <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-4">Key Docs</div>
-        <div className="grid grid-cols-1 gap-2">
-          {[
-            { label: "Anthropic API", url: "https://docs.anthropic.com" },
-            { label: "LangGraph Core", url: "https://langchain-ai.github.io/langgraph/" },
-            { label: "ChromaDB Hub", url: "https://docs.trychroma.com" },
-          ].map((link, i) => (
-            <a key={i} href={link.url} target="_blank" rel="noopener noreferrer"
-              className="px-4 py-3 glass-panel-prism rounded-xl text-[10px] font-mono text-primary/60 hover:text-primary hover:bg-primary/5 transition-all uppercase tracking-widest text-center"
-            >
-              {link.label}
-            </a>
-          ))}
+      {/* Key Docs — only shown for default curriculum */}
+      {!isCustomCurriculum && (
+        <div className="pt-6 border-t border-white/5">
+          <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest mb-4">Key Docs</div>
+          <div className="grid grid-cols-1 gap-2">
+            {[
+              { label: "Anthropic API", url: "https://docs.anthropic.com" },
+              { label: "LangGraph Core", url: "https://langchain-ai.github.io/langgraph/" },
+              { label: "ChromaDB Hub", url: "https://docs.trychroma.com" },
+            ].map((link, i) => (
+              <a key={i} href={link.url} target="_blank" rel="noopener noreferrer"
+                className="px-4 py-3 glass-panel-prism rounded-xl text-[10px] font-mono text-primary/60 hover:text-primary hover:bg-primary/5 transition-all uppercase tracking-widest text-center"
+              >
+                {link.label}
+              </a>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 
   // ── Main Responsive Layout ──────────────────────────────────────────────────
   return (
-    <div className="h-dvh flex flex-col cyber-bg text-white overflow-hidden">
+    <div className="h-screen-safe flex flex-col cyber-bg text-white overflow-hidden">
       <div className="absolute inset-0 cyber-grid pointer-events-none opacity-20" />
       
       {/* Header (Laptop + Mobile) */}
