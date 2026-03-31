@@ -1,4 +1,7 @@
-const BASE = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
+// All requests go through the Next.js server-side proxy at /api/proxy/
+// This avoids NEXT_PUBLIC_API_URL being baked at build time (causing 404s
+// when the variable wasn't set before the build ran).
+const BASE = "/api/proxy";
 
 export interface ChatResponse {
   content: string;
