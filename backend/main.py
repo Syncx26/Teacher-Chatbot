@@ -217,8 +217,11 @@ async def chat_endpoint(req: ChatRequest):
         # Load only relevant memories for this message (cost-efficient)
         memories = get_relevant_memories(req.user_id, req.message)
 
-        # Build fresh system prompt with live progress + memory + task-specific teaching mode
-        system_prompt = build_prompt(progress, task_type=task_type, memories=memories)
+        # Load active curriculum (custom or default)
+        curriculum = get_active_curriculum(req.user_id)
+
+        # Build fresh system prompt with live progress + memory + curriculum + task mode
+        system_prompt = build_prompt(progress, task_type=task_type, memories=memories, curriculum=curriculum)
 
         # Call AI
         result = await chat(gated_message, system_prompt, model_tier, history)
