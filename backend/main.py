@@ -126,51 +126,56 @@ def create_sprint(req: SprintGoalRequest):
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(req: ChatRequest):
-    progress = get_progress(req.user_id)
-    history = get_conversation_history(req.user_id, limit=20)
+    try:
+        progress = get_progress(req.user_id)
+        history = get_conversation_history(req.user_id, limit=20)
 
-    # Persist user message
-    append_message(req.user_id, "user", req.message)
+        # Persist user message
+        append_message(req.user_id, "user", req.message)
 
-    # Rules engine pre-check (may inject gate/wellbeing prefixes)
-    gated_message = pre_check(req.message, progress)
+        # Rules engine pre-check (may inject gate/wellbeing prefixes)
+        gated_message = pre_check(req.message, progress)
 
-    # Route to correct model tier + task type
-    route = classify_request(req.message, progress)
-    model_tier = route["tier"]
-    task_type = route["task_type"]
+        # Route to correct model tier + task type
+        route = classify_request(req.message, progress)
+        model_tier = route["tier"]
+        task_type = route["task_type"]
 
-    # Build fresh system prompt with live progress + task-specific teaching mode
-    system_prompt = build_prompt(progress, task_type=task_type)
+        # Build fresh system prompt with live progress + task-specific teaching mode
+        system_prompt = build_prompt(progress, task_type=task_type)
 
-    # Call AI
-    result = await chat(gated_message, system_prompt, model_tier, history)
+        # Call AI
+        result = await chat(gated_message, system_prompt, model_tier, history)
 
-    content = result["content"]
-    tier = result["model_tier"]
-    conf_score = result.get("confidence_score")
-    conf_json = result.get("confidence_json")
+        content = result["content"]
+        tier = result["model_tier"]
+        conf_score = result.get("confidence_score")
+        conf_json = result.get("confidence_json")
 
-    # Post-check (milestone / stuck detection)
-    pc = post_check(content, progress)
+        # Post-check (milestone / stuck detection)
+        pc = post_check(content, progress)
 
-    # Persist assistant message
-    append_message(
-        req.user_id, "assistant", content,
-        model_tier=tier,
-        confidence_score=conf_score,
-        confidence_json=conf_json,
-    )
+        # Persist assistant message
+        append_message(
+            req.user_id, "assistant", content,
+            model_tier=tier,
+            confidence_score=conf_score,
+            confidence_json=conf_json,
+        )
 
-    # Award XP for engagement
-    add_xp(req.user_id, 5)
+        # Award XP for engagement
+        add_xp(req.user_id, 5)
 
-    return ChatResponse(
-        content=content,
-        model_tier=tier,
-        confidence_score=conf_score,
-        post_check=pc,
-    )
+        return ChatResponse(
+            content=content,
+            model_tier=tier,
+            confidence_score=conf_score,
+            post_check=pc,
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
 @app.get("/chat/history/{user_id}")
@@ -420,3 +425,20 @@ def list_custom_topics(user_id: str):
 @app.get("/health")
 def health():
     return {"status": "ok", "db": DB_PATH}
+
+
+@app.get("/health/keys")
+def health_keys():
+    """Return which API keys are set (not their values) to help diagnose issues."""
+    from config import (
+        ANTHROPIC_API_KEY, GOOGLE_API_KEY, YOUTUBE_API_KEY,
+        TAVILY_API_KEY, OPENROUTER_API_KEY, HF_TOKEN,
+    )
+    return {
+        "ANTHROPIC_API_KEY": bool(ANTHROPIC_API_KEY),
+        "GOOGLE_API_KEY": bool(GOOGLE_API_KEY),
+        "YOUTUBE_API_KEY": bool(YOUTUBE_API_KEY),
+        "TAVILY_API_KEY": bool(TAVILY_API_KEY),
+        "OPENROUTER_API_KEY": bool(OPENROUTER_API_KEY),
+        "HF_TOKEN": bool(HF_TOKEN),
+    }

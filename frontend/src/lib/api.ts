@@ -70,7 +70,14 @@ export async function sendMessage(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ user_id: userId, message }),
   });
-  if (!res.ok) throw new Error(`sendMessage failed: ${res.status}`);
+  if (!res.ok) {
+    let detail = "";
+    try {
+      const body = await res.json();
+      detail = body.detail ?? body.message ?? "";
+    } catch {}
+    throw new Error(`HTTP ${res.status}${detail ? `: ${detail}` : ""}`);
+  }
   return res.json();
 }
 
