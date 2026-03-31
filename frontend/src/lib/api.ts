@@ -128,19 +128,75 @@ export interface PapersListResponse {
 export async function getPapers(
   limit = 20,
   offset = 0,
-  source?: string
+  source?: string,
+  topic?: string
 ): Promise<PapersListResponse> {
   const params = new URLSearchParams({
     limit: String(limit),
     offset: String(offset),
   });
   if (source) params.set("source", source);
+  if (topic) params.set("topic", topic);
   const res = await fetch(`${BASE}/papers?${params.toString()}`, {
     method: "GET",
     headers: { "Content-Type": "application/json" },
   });
   if (!res.ok) throw new Error(`getPapers failed: ${res.status}`);
   return res.json();
+}
+
+export interface RelatedPaper {
+  title: string;
+  authors: string;
+  url: string;
+  citation_count: number | null;
+  year: number | null;
+  relation: "reference" | "citation";
+}
+
+export async function getRelatedPapers(paperId: number): Promise<RelatedPaper[]> {
+  const res = await fetch(`${BASE}/papers/${paperId}/related`, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.related ?? [];
+}
+
+export async function bookmarkPaper(paperId: number, userId: string): Promise<void> {
+  await fetch(`${BASE}/papers/${paperId}/bookmark`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: userId }),
+  });
+}
+
+export async function unbookmarkPaper(paperId: number, userId: string): Promise<void> {
+  await fetch(`${BASE}/papers/${paperId}/bookmark`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: userId }),
+  });
+}
+
+export async function getBookmarks(userId: string): Promise<PaperResponse[]> {
+  const res = await fetch(`${BASE}/papers/bookmarks/${userId}`, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function getFullTextUrl(paperId: number): Promise<string | null> {
+  const res = await fetch(`${BASE}/papers/${paperId}/fulltext`, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.pdf_url ?? null;
 }
 
 export async function getPaper(paperId: number): Promise<PaperResponse> {
