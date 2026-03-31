@@ -519,7 +519,7 @@ export default function TutorPage() {
 
   // ── Main Responsive Layout ──────────────────────────────────────────────────
   return (
-    <div className="h-dvh flex flex-col cyber-bg text-white overflow-hidden safe-top">
+    <div className="h-dvh flex flex-col cyber-bg text-white overflow-hidden">
       <div className="absolute inset-0 cyber-grid pointer-events-none opacity-20" />
       
       {/* Header (Laptop + Mobile) */}
