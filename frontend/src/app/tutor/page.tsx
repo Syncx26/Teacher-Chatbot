@@ -6,7 +6,7 @@ import ReactMarkdown from "react-markdown";
 import { ThemeToggle, useTheme } from "@/components/ThemeProvider";
 import remarkGfm from "remark-gfm";
 import { useAppStore, Message, Curriculum } from "@/lib/store";
-import { sendMessage, getProgress, getTopics, advanceWeek, getMoreResources, proposeTopic, confirmTopic, getActiveCurriculum, MoreResource, TopicProposal } from "@/lib/api";
+import { sendMessage, getProgress, getTopics, advanceWeek, getMoreResources, proposeTopic, confirmTopic, getActiveCurriculum, getChatHistory, MoreResource, TopicProposal } from "@/lib/api";
 import ConfidenceBadge from "@/components/ConfidenceBadge";
 import ModelBadge from "@/components/ModelBadge";
 import TopicChip from "@/components/TopicChip";
@@ -97,7 +97,7 @@ export default function TutorPage() {
   const isDark = theme === "dark";
   const {
     userId, currentWeek, xp, completedWeeks, messages,
-    topics, activeTab, setProgress, addMessage, setTopics, setActiveTab,
+    topics, activeTab, setProgress, setMessages, addMessage, setTopics, setActiveTab,
     activeCurriculum, setCurriculum,
   } = useAppStore();
 
@@ -140,6 +140,16 @@ export default function TutorPage() {
     getTopics(userId).then((ts) => setTopics(ts.map((t) => ({ ...t, label: t.label ?? t.name })))).catch(console.error);
     if (!activeCurriculum) {
       getActiveCurriculum(userId).then((c) => setCurriculum(c as Curriculum)).catch(console.error);
+    }
+    // Load chat history only if the in-memory store is empty (first mount / page refresh)
+    if (messages.length === 0) {
+      getChatHistory(userId)
+        .then((data) => {
+          if (data.messages.length > 0) {
+            setMessages(data.messages.map((m) => ({ ...m, role: m.role as "user" | "assistant" })));
+          }
+        })
+        .catch(console.error);
     }
   }, [userId, setProgress, setTopics]); // eslint-disable-line react-hooks/exhaustive-deps
 

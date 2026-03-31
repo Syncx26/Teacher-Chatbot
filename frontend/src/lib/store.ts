@@ -63,6 +63,7 @@ interface AppStore {
   pomodoroSeconds: number;
 
   setProgress: (p: { current_week?: number; xp?: number; completed_weeks?: number[] }) => void;
+  setMessages: (msgs: Message[]) => void;
   addMessage: (m: Message) => void;
   setTopics: (t: Topic[]) => void;
   setPapers: (p: Paper[]) => void;
@@ -114,6 +115,8 @@ export const useAppStore = create<AppStore>((set) => ({
       xp: p.xp ?? state.xp,
       completedWeeks: p.completed_weeks ?? state.completedWeeks,
     })),
+
+  setMessages: (msgs) => set({ messages: msgs }),
 
   addMessage: (m) =>
     set((state) => ({ messages: [...state.messages, m] })),
