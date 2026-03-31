@@ -10,9 +10,13 @@
 import { NextRequest, NextResponse } from "next/server";
 
 // Server-side: reads from process.env at request time (not baked into bundle)
-const BACKEND = (
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
-).replace(/\/$/, "");
+// Ensure the URL has a scheme — Railway variables are sometimes set without https://
+function normalizeUrl(raw: string): string {
+  const s = raw.replace(/\/$/, "");
+  if (s.startsWith("http://") || s.startsWith("https://")) return s;
+  return `https://${s}`;
+}
+const BACKEND = normalizeUrl(process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000");
 
 async function proxy(
   req: NextRequest,
