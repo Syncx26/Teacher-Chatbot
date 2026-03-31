@@ -186,13 +186,16 @@ def get_history(user_id: str, limit: int = 20):
 # ── Research Paper Endpoints ──────────────────────────────────────────────────
 
 @app.get("/papers")
-def list_papers_endpoint(
+async def list_papers_endpoint(
     limit: int = 20,
     offset: int = 0,
     source: Optional[str] = None,
 ):
     papers = get_papers(limit=limit, offset=offset, source=source)
     last_refresh = get_last_refresh_time()
+    # Auto-trigger background fetch if DB is empty (first deploy)
+    if not papers and last_refresh is None:
+        asyncio.create_task(trigger_refresh(1))
     return {
         "papers": papers,
         "total": len(papers),
