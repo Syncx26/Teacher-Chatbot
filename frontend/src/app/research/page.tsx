@@ -373,7 +373,8 @@ function ResearchPageInner() {
                           ``,
                           `Can you help me understand the key ideas, methodology, and findings? What are the main takeaways?`,
                         ].filter((l) => l !== null).join("\n");
-                        sessionStorage.setItem("synapse_pending_msg", parts);
+                        sessionStorage.setItem("synapse_pending_msg", `Discuss paper: ${selectedPaper.title}`);
+                        sessionStorage.setItem("synapse_pending_context", parts);
                         window.location.href = "/tutor";
                       }}
                       className="flex-1 min-w-[160px] flex items-center justify-center gap-2 py-3 bg-primary text-black font-black uppercase tracking-widest text-[9px] rounded-xl hover:bg-white transition-all"

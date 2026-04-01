@@ -153,16 +153,20 @@ export default function TutorPage() {
     }
   }, [userId, setProgress, setTopics]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-send any message queued from the home page
+  // Auto-send any message queued from the home page or research page
   useEffect(() => {
     const pending = sessionStorage.getItem("synapse_pending_msg");
     if (!pending) return;
     sessionStorage.removeItem("synapse_pending_msg");
+    // synapse_pending_context carries the full hidden payload (e.g. paper details).
+    // The user only sees `pending` (the short label); Nova receives `context`.
+    const context = sessionStorage.getItem("synapse_pending_context") ?? pending;
+    sessionStorage.removeItem("synapse_pending_context");
     const uid = useAppStore.getState().userId;
     if (!uid) return;
     addMessage({ role: "user", content: pending, timestamp: new Date().toISOString() });
     setLoading(true);
-    sendMessage(uid, pending)
+    sendMessage(uid, context)
       .then((res) => {
         addMessage({
           role: "assistant",
