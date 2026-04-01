@@ -355,12 +355,31 @@ function ResearchPageInner() {
 
                   {/* Action buttons */}
                   <div className="flex flex-wrap gap-3">
-                    <a
-                      href={`/tutor?paper_id=${selectedPaper.id}&paper_title=${encodeURIComponent(selectedPaper.title)}`}
+                    <button
+                      onClick={() => {
+                        const parts = [
+                          `I want to discuss this research paper with you:`,
+                          ``,
+                          `**Title**: ${selectedPaper.title}`,
+                          selectedPaper.authors ? `**Authors**: ${selectedPaper.authors}` : null,
+                          selectedPaper.url ? `**Link**: ${selectedPaper.url}` : null,
+                          selectedPaper.published_date ? `**Published**: ${selectedPaper.published_date.slice(0, 10)}` : null,
+                          ``,
+                          selectedPaper.summary
+                            ? `**Summary**: ${selectedPaper.summary}`
+                            : selectedPaper.abstract
+                            ? `**Abstract**: ${selectedPaper.abstract.slice(0, 600)}${selectedPaper.abstract.length > 600 ? "…" : ""}`
+                            : null,
+                          ``,
+                          `Can you help me understand the key ideas, methodology, and findings? What are the main takeaways?`,
+                        ].filter((l) => l !== null).join("\n");
+                        sessionStorage.setItem("synapse_pending_msg", parts);
+                        window.location.href = "/tutor";
+                      }}
                       className="flex-1 min-w-[160px] flex items-center justify-center gap-2 py-3 bg-primary text-black font-black uppercase tracking-widest text-[9px] rounded-xl hover:bg-white transition-all"
                     >
                       💬 Discuss with Nova
-                    </a>
+                    </button>
                     {selectedPaper.url && (
                       <a
                         href={selectedPaper.url}
