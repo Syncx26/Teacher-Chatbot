@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-editorial">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0F172A">
+<title>Mastermind · UI Mockup</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&family=Playfair+Display:wght@600;700;900&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ═══════════════════════════════════════════════
+   THEME 1 · EDITORIAL INK  (warm light, serif)
+═══════════════════════════════════════════════ */
+.theme-editorial {
+  --background:      #F4F2EC;
+  --surface:         #FFFFFF;
+  --surface-raised:  #FAFAF6;
+  --border:          #E5E2D9;
+  --text-primary:    #111111;
+  --text-secondary:  #57534E;
+  --text-muted:      #A8A29E;
+  --accent:          #6366F1;
+  --accent-hover:    #4F46E5;
+  --accent-subtle:   rgba(99, 102, 241, 0.08);
+  --warning:         #F59E0B;
+  --success:         #22C55E;
+  --shadow-color:    rgba(17, 17, 17, 0.06);
+  --shadow-raised:   rgba(17, 17, 17, 0.12);
+  --grain-opacity:   0.04;
+
+  --font-heading: 'Playfair Display', Georgia, serif;
+  --font-body:    'Merriweather', Georgia, serif;
+  --font-ui:      'Inter', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', monospace;
+}
+
+/* ═══════════════════════════════════════════════
+   THEME 2 · NORDIC SLATE  (cool dark, sans)
+═══════════════════════════════════════════════ */
+.theme-nordic {
+  --background:      #0F172A;
+  --surface:         #1E293B;
+  --surface-raised:  #263348;
+  --border:          #334155;
+  --text-primary:    #F8FAFC;
+  --text-secondary:  #94A3B8;
+  --text-muted:      #64748B;
+  --accent:          #22D3EE;
+  --accent-hover:    #06B6D4;
+  --accent-subtle:   rgba(34, 211, 238, 0.1);
+  --warning:         #FBBF24;
+  --success:         #34D399;
+  --shadow-color:    rgba(0, 0, 0, 0.4);
+  --shadow-raised:   rgba(0, 0, 0, 0.6);
+  --grain-opacity:   0.05;
+
+  --font-heading: 'Inter', system-ui, sans-serif;
+  --font-body:    'Inter', system-ui, sans-serif;
+  --font-ui:      'Inter', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', monospace;
+}
+
+/* ═══════════════════════════════════════════════
+   RESET
+═══════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: var(--background);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  min-height: 100dvh;
+  transition: background 0.4s ease, color 0.4s ease;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+button { font-family: inherit; background: none; border: none; cursor: pointer; color: inherit; }
+textarea, input { font-family: inherit; }
+
+/* ═══════════════════════════════════════════════
+   GRAIN OVERLAY (entire page)
+═══════════════════════════════════════════════ */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: var(--grain-opacity);
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: multiply;
+}
+.theme-nordic body::before { mix-blend-mode: screen; }
+
+/* ═══════════════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════════════ */
+.app {
+  max-width: 430px;
+  margin: 0 auto;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ═══════════════════════════════════════════════
+   TOP BAR
+═══════════════════════════════════════════════ */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 20px 14px;
+  font-family: var(--font-ui);
+}
+
+.brand {
+  font-weight: 900;
+  font-size: 15px;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+.brand span { color: var(--accent); }
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+.theme-toggle:active { transform: scale(0.96); }
+
+/* ═══════════════════════════════════════════════
+   PROGRESS BAR
+═══════════════════════════════════════════════ */
+.progress {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 20px;
+  margin-bottom: 20px;
+}
+.progress-seg {
+  height: 2px;
+  border-radius: 1px;
+  background: var(--border);
+  flex: 1;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.progress-seg.active { background: var(--accent); flex: 3; }
+.progress-seg.done   { background: var(--accent); }
+
+/* ═══════════════════════════════════════════════
+   CARD
+═══════════════════════════════════════════════ */
+.card-wrap {
+  flex: 1;
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.card {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 28px 24px;
+  box-shadow: 0 4px 24px var(--shadow-color);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  animation: slideUp 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.card.checkpoint {
+  background: var(--surface-raised);
+  border-color: var(--warning);
+  border-width: 1px;
+}
+
+/* Decorative corner accents for checkpoint */
+.card.checkpoint::before,
+.card.checkpoint::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid var(--warning);
+  opacity: 0.5;
+}
+.card.checkpoint::before { top: 12px; left: 12px; border-right: none; border-bottom: none; }
+.card.checkpoint::after  { bottom: 12px; right: 12px; border-left: none; border-top: none; }
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.badge-key-idea     { background: var(--accent-subtle); color: var(--accent); }
+.badge-real-story   { background: rgba(245, 158, 11, 0.12); color: #B45309; }
+.theme-nordic .badge-real-story { color: #FBBF24; }
+.badge-checkpoint   { background: rgba(239, 68, 68, 0.12); color: #DC2626; }
+.theme-nordic .badge-checkpoint { color: #F87171; }
+.badge-hot-take     { background: rgba(251, 146, 60, 0.12); color: #C2410C; }
+.theme-nordic .badge-hot-take { color: #FB923C; }
+.badge-did-you-know { background: rgba(16, 185, 129, 0.12); color: #047857; }
+.theme-nordic .badge-did-you-know { color: #34D399; }
+
+.week-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--text-muted);
+}
+
+.card-title {
+  font-family: var(--font-heading);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text-primary);
+  margin-bottom: 18px;
+  letter-spacing: -0.01em;
+}
+.theme-nordic .card-title { font-weight: 800; letter-spacing: -0.02em; }
+
+.card-body {
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+/* ═══════════════════════════════════════════════
+   THETA DECAY CHART
+═══════════════════════════════════════════════ */
+.chart-wrap {
+  margin-top: 22px;
+  padding: 16px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.chart-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+.chart-svg { width: 100%; height: 90px; }
+
+/* ═══════════════════════════════════════════════
+   CHECKPOINT INPUT
+═══════════════════════════════════════════════ */
+.checkpoint-form {
+  margin-top: 22px;
+}
+.checkpoint-input {
+  width: 100%;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  resize: none;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.checkpoint-input:focus { border-color: var(--accent); }
+.checkpoint-input::placeholder { color: var(--text-muted); }
+
+.checkpoint-submit {
+  width: 100%;
+  margin-top: 12px;
+  padding: 16px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 14px;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  transition: all 0.2s;
+}
+.checkpoint-submit:disabled {
+  background: var(--border);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+.checkpoint-submit:active:not(:disabled) { transform: scale(0.98); }
+
+.checkpoint-hint {
+  text-align: center;
+  margin-top: 10px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ═══════════════════════════════════════════════
+   GHOST NEXT CARD
+═══════════════════════════════════════════════ */
+.ghost {
+  margin: 10px 20px 0;
+  height: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px 14px 0 0;
+  opacity: 0.5;
+  transform: scale(0.96);
+}
+
+/* ═══════════════════════════════════════════════
+   BOTTOM ACTION BAR
+═══════════════════════════════════════════════ */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px 24px;
+  font-family: var(--font-ui);
+}
+
+.btn-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.btn-action:active { transform: scale(0.96); }
+.btn-action.flex    { flex: 1; }
+.btn-action .accent { color: var(--accent); font-size: 14px; }
+
+.btn-next {
+  width: 52px;
+  height: 52px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 14px;
+  font-size: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.btn-next:active { transform: scale(0.92); }
+.btn-next:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* ═══════════════════════════════════════════════
+   FLOATING HINT (first visit)
+═══════════════════════════════════════════════ */
+.hint {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  animation: hintPulse 3s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 100;
+}
+@keyframes hintPulse {
+  0%, 100% { opacity: 0.7; }
+  50%      { opacity: 1; }
+}
+.hint.hidden { display: none; }
+
+/* ═══════════════════════════════════════════════
+   ASK NOVA DRAWER
+═══════════════════════════════════════════════ */
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: none;
+  align-items: flex-end;
+  z-index: 1000;
+  animation: fadeIn 0.25s ease;
+}
+.drawer-backdrop.open { display: flex; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.drawer {
+  width: 100%;
+  max-width: 430px;
+  margin: 0 auto;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-radius: 24px 24px 0 0;
+  padding: 20px 22px 32px;
+  animation: slideInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  max-height: 75vh;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes slideInUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+.drawer-handle {
+  width: 40px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 0 auto 18px;
+}
+
+.drawer-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.drawer-head h3 {
+  font-family: var(--font-ui);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 3px;
+}
+.drawer-head p {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.drawer-close {
+  font-size: 22px;
+  color: var(--text-muted);
+  padding: 0 4px;
+}
+
+.drawer-input {
+  width: 100%;
+  padding: 14px 16px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  resize: none;
+  outline: none;
+  min-height: 90px;
+}
+.drawer-input:focus { border-color: var(--accent); }
+
+.drawer-send {
+  width: 100%;
+  margin-top: 14px;
+  padding: 15px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 14px;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+.drawer-send:active { transform: scale(0.98); }
+
+/* ═══════════════════════════════════════════════
+   LANGUAGE MENU
+═══════════════════════════════════════════════ */
+.lang-menu {
+  position: fixed;
+  bottom: 90px;
+  right: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow: 0 10px 40px var(--shadow-raised);
+  display: none;
+  z-index: 200;
+  animation: slideUp 0.2s ease;
+}
+.lang-menu.open { display: block; }
+.lang-item {
+  display: block;
+  width: 100%;
+  padding: 10px 20px;
+  text-align: left;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--text-primary);
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+.lang-item:hover { background: var(--surface-raised); }
+.lang-item.active { color: var(--accent); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ═══ TOP BAR ═══ -->
+  <div class="topbar">
+    <div class="brand">MASTER<span>MIND</span></div>
+    <button class="theme-toggle" id="themeBtn">
+      <span id="themeIcon">◐</span>
+      <span id="themeName">NORDIC</span>
+    </button>
+  </div>
+
+  <!-- ═══ PROGRESS ═══ -->
+  <div class="progress" id="progress"></div>
+
+  <!-- ═══ CARD CONTAINER ═══ -->
+  <div class="card-wrap">
+    <div class="card" id="card"></div>
+  </div>
+
+  <!-- ═══ GHOST NEXT CARD ═══ -->
+  <div class="ghost" id="ghost"></div>
+
+  <!-- ═══ BOTTOM ACTIONS ═══ -->
+  <div class="actions">
+    <button class="btn-action flex" id="askBtn">
+      <span class="accent">✦</span>
+      <span>Ask Nova</span>
+    </button>
+    <button class="btn-action" id="langBtn">
+      <span>🌐</span>
+      <span id="langLabel">Hindi</span>
+    </button>
+    <button class="btn-next" id="nextBtn">↑</button>
+  </div>
+
+  <!-- ═══ FIRST-VISIT HINT ═══ -->
+  <div class="hint" id="hint">Hold a card to ask a question</div>
+
+</div>
+
+<!-- ═══ ASK NOVA DRAWER ═══ -->
+<div class="drawer-backdrop" id="drawerBackdrop">
+  <div class="drawer">
+    <div class="drawer-handle"></div>
+    <div class="drawer-head">
+      <div>
+        <h3>Ask Nova</h3>
+        <p>Ask anything — about this card or anything else</p>
+      </div>
+      <button class="drawer-close" id="drawerClose">✕</button>
+    </div>
+    <textarea class="drawer-input" placeholder="What's on your mind?" id="drawerInput"></textarea>
+    <button class="drawer-send">Send →</button>
+  </div>
+</div>
+
+<!-- ═══ LANG MENU ═══ -->
+<div class="lang-menu" id="langMenu">
+  <button class="lang-item" data-lang="English">English</button>
+  <button class="lang-item active" data-lang="Hindi">Hindi</button>
+  <button class="lang-item" data-lang="Tamil">Tamil</button>
+  <button class="lang-item" data-lang="Bengali">Bengali</button>
+  <button class="lang-item" data-lang="Swahili">Swahili</button>
+  <button class="lang-item" data-lang="Urdu">Urdu</button>
+  <button class="lang-item" data-lang="Arabic">Arabic</button>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   DATA
+═══════════════════════════════════════════════ */
+const CARDS = [
+  {
+    type:  "key-idea",
+    week:  2,
+    badge: "KEY IDEA",
+    title: "Why your option loses value even when the stock doesn't move",
+    body:  "Think of it like ice melting in your hand. Every day that passes, your option is worth a little less — even if the stock sits completely still. Traders call this theta. It works against you quietly, every single day.",
+    chart: true
+  },
+  {
+    type:  "real-story",
+    badge: "REAL STORY",
+    title: "The trader who collapsed a 200-year-old bank with one bet",
+    body:  "In 1995, Nick Leeson was 28 years old and working at Barings Bank in Singapore. He started hiding losing trades in a secret account. By the time anyone noticed, he had lost £827 million. Barings — one of the oldest banks in Britain — was sold for £1. The lesson: theta and leverage are a dangerous combination when you are not watching."
+  },
+  {
+    type:   "checkpoint",
+    badge:  "CHECKPOINT",
+    title:  "Show what you know",
+    body:   "AAPL is trading at $180. You bought a $190 call expiring in 14 days. The stock hasn't moved all week. Has your option gained or lost value? Why?",
+    locked: true
+  },
+  {
+    type:  "hot-take",
+    badge: "HOT TAKE",
+    title: "Most retail traders buy options when they should be selling them",
+    body:  "Theta works against buyers every single day. Professional traders know this — that is why they sell options far more than they buy them. Retail traders do the opposite. They buy lottery tickets and wonder why they keep losing."
+  },
+  {
+    type:  "did-you-know",
+    badge: "DID YOU KNOW",
+    title: "The same maths that prices options also describes how heat moves through metal",
+    body:  "Fischer Black and Myron Scholes did not invent new maths when they built the options pricing model. They borrowed it from physics — the heat equation, first solved in 1822. The same formula that tells you how a metal rod cools down tells you what your option is worth today."
+  }
+];
+
+/* ═══════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════ */
+let cardIndex = 0;
+let checkpointDone = false;
+let currentLang = "Hindi";
+
+/* ═══════════════════════════════════════════════
+   RENDER
+═══════════════════════════════════════════════ */
+function renderProgress() {
+  const el = document.getElementById("progress");
+  el.innerHTML = CARDS.map((_, i) => {
+    let cls = "progress-seg";
+    if (i === cardIndex) cls += " active";
+    else if (i < cardIndex) cls += " done";
+    return `<div class="${cls}"></div>`;
+  }).join("");
+}
+
+function renderCard() {
+  const c = CARDS[cardIndex];
+  const card = document.getElementById("card");
+  card.className = "card" + (c.type === "checkpoint" ? " checkpoint" : "");
+
+  let html = `
+    <div class="card-head">
+      <span class="badge badge-${c.type}">${c.badge}</span>
+      ${c.week ? `<span class="week-label">WEEK ${String(c.week).padStart(2, "0")}</span>` : ""}
+    </div>
+    <h1 class="card-title">${c.title}</h1>
+    <p class="card-body">${c.body}</p>
+  `;
+
+  if (c.chart) html += renderChart();
+  if (c.locked && !checkpointDone) html += renderCheckpointForm();
+
+  // Restart animation
+  card.style.animation = "none";
+  void card.offsetHeight;
+  card.style.animation = "";
+
+  card.innerHTML = html;
+
+  if (c.locked && !checkpointDone) {
+    const input  = card.querySelector(".checkpoint-input");
+    const submit = card.querySelector(".checkpoint-submit");
+    input.addEventListener("input", () => {
+      submit.disabled = !input.value.trim();
+    });
+    submit.addEventListener("click", () => {
+      checkpointDone = true;
+      renderCard();
+      updateUI();
+    });
+  }
+
+  // Hide ghost on checkpoint
+  const ghost = document.getElementById("ghost");
+  ghost.style.display = (c.locked && !checkpointDone) ? "none" : "block";
+}
+
+function renderChart() {
+  const pts = Array.from({ length: 31 }, (_, i) => {
+    const x = (i / 30) * 280;
+    const y = 80 * Math.exp(-0.08 * i) + 8;
+    return `${x},${y}`;
+  }).join(" ");
+
+  return `
+    <div class="chart-wrap">
+      <div class="chart-label">Option value over time · 30 days → 0 days</div>
+      <svg class="chart-svg" viewBox="0 0 290 100" preserveAspectRatio="none">
+        <line x1="0" y1="25" x2="290" y2="25" stroke="var(--border)" stroke-width="0.5" stroke-dasharray="3,3"/>
+        <line x1="0" y1="50" x2="290" y2="50" stroke="var(--border)" stroke-width="0.5" stroke-dasharray="3,3"/>
+        <line x1="0" y1="75" x2="290" y2="75" stroke="var(--border)" stroke-width="0.5" stroke-dasharray="3,3"/>
+        <polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="6" stroke-opacity="0.2" stroke-linecap="round"/>
+        <polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="0" cy="88" r="3.5" fill="var(--accent)"/>
+        <circle cx="280" cy="8" r="3.5" fill="var(--accent)"/>
+      </svg>
+    </div>
+  `;
+}
+
+function renderCheckpointForm() {
+  return `
+    <div class="checkpoint-form">
+      <textarea class="checkpoint-input" rows="4" placeholder="Write your answer here..."></textarea>
+      <button class="checkpoint-submit" disabled>Submit →</button>
+      <p class="checkpoint-hint">Clear this checkpoint to keep going</p>
+    </div>
+  `;
+}
+
+/* ═══════════════════════════════════════════════
+   UI UPDATE
+═══════════════════════════════════════════════ */
+function updateUI() {
+  renderProgress();
+  const c = CARDS[cardIndex];
+  const locked = c.locked && !checkpointDone;
+  const isLast = cardIndex === CARDS.length - 1;
+
+  const nextBtn = document.getElementById("nextBtn");
+  nextBtn.disabled = locked || isLast;
+  nextBtn.style.display = locked ? "none" : "inline-flex";
+
+  const ghost = document.getElementById("ghost");
+  ghost.style.display = (locked || isLast) ? "none" : "block";
+}
+
+function advance() {
+  const c = CARDS[cardIndex];
+  if (c.locked && !checkpointDone) return;
+  if (cardIndex < CARDS.length - 1) {
+    cardIndex++;
+    checkpointDone = false;
+    renderCard();
+    updateUI();
+    document.getElementById("hint").classList.add("hidden");
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   THEME TOGGLE
+═══════════════════════════════════════════════ */
+function toggleTheme() {
+  const html = document.documentElement;
+  const isEd = html.classList.contains("theme-editorial");
+  html.classList.remove("theme-editorial", "theme-nordic");
+  html.classList.add(isEd ? "theme-nordic" : "theme-editorial");
+  document.getElementById("themeIcon").textContent = isEd ? "☀" : "◐";
+  document.getElementById("themeName").textContent = isEd ? "EDITORIAL" : "NORDIC";
+  localStorage.setItem("mastermind-theme", isEd ? "theme-nordic" : "theme-editorial");
+}
+
+/* Restore theme */
+(function() {
+  const saved = localStorage.getItem("mastermind-theme");
+  if (saved === "theme-nordic") {
+    document.documentElement.classList.remove("theme-editorial");
+    document.documentElement.classList.add("theme-nordic");
+    document.getElementById("themeIcon").textContent = "☀";
+    document.getElementById("themeName").textContent = "EDITORIAL";
+  }
+})();
+
+/* ═══════════════════════════════════════════════
+   DRAWER
+═══════════════════════════════════════════════ */
+function openDrawer()  { document.getElementById("drawerBackdrop").classList.add("open"); }
+function closeDrawer() { document.getElementById("drawerBackdrop").classList.remove("open"); }
+
+/* ═══════════════════════════════════════════════
+   LANG MENU
+═══════════════════════════════════════════════ */
+function toggleLangMenu() {
+  document.getElementById("langMenu").classList.toggle("open");
+}
+function setLang(lang) {
+  currentLang = lang;
+  document.getElementById("langLabel").textContent = lang;
+  document.querySelectorAll(".lang-item").forEach(el => {
+    el.classList.toggle("active", el.dataset.lang === lang);
+  });
+  document.getElementById("langMenu").classList.remove("open");
+}
+
+/* ═══════════════════════════════════════════════
+   LONG PRESS ON CARD
+═══════════════════════════════════════════════ */
+let pressTimer;
+function attachLongPress() {
+  const card = document.getElementById("card");
+  const start = () => { pressTimer = setTimeout(openDrawer, 550); };
+  const end   = () => clearTimeout(pressTimer);
+  card.addEventListener("mousedown",  start);
+  card.addEventListener("touchstart", start);
+  card.addEventListener("mouseup",    end);
+  card.addEventListener("mouseleave", end);
+  card.addEventListener("touchend",   end);
+}
+
+/* ═══════════════════════════════════════════════
+   SWIPE (touch)
+═══════════════════════════════════════════════ */
+let touchStartY = 0;
+document.addEventListener("touchstart", e => { touchStartY = e.touches[0].clientY; });
+document.addEventListener("touchend", e => {
+  const dy = touchStartY - e.changedTouches[0].clientY;
+  if (dy > 60) advance();                    // swipe up
+});
+
+/* ═══════════════════════════════════════════════
+   KEYBOARD (desktop)
+═══════════════════════════════════════════════ */
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowUp" || e.key === " ")   advance();
+  if (e.key === "Escape") closeDrawer();
+});
+
+/* ═══════════════════════════════════════════════
+   WIRE EVERYTHING
+═══════════════════════════════════════════════ */
+document.getElementById("themeBtn").addEventListener("click", toggleTheme);
+document.getElementById("nextBtn").addEventListener("click", advance);
+document.getElementById("askBtn").addEventListener("click", openDrawer);
+document.getElementById("langBtn").addEventListener("click", toggleLangMenu);
+document.getElementById("drawerClose").addEventListener("click", closeDrawer);
+document.getElementById("drawerBackdrop").addEventListener("click", e => {
+  if (e.target.id === "drawerBackdrop") closeDrawer();
+});
+document.querySelectorAll(".lang-item").forEach(el => {
+  el.addEventListener("click", () => setLang(el.dataset.lang));
+});
+document.addEventListener("click", e => {
+  const menu = document.getElementById("langMenu");
+  const btn  = document.getElementById("langBtn");
+  if (!menu.contains(e.target) && !btn.contains(e.target)) menu.classList.remove("open");
+});
+
+/* ═══════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════ */
+renderProgress();
+renderCard();
+updateUI();
+attachLongPress();
+
+/* Re-attach long press after each card render */
+const origRenderCard = renderCard;
+window.renderCard = function() { origRenderCard(); attachLongPress(); };
+</script>
+
+</body>
+</html>
