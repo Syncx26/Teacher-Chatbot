@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+alembic
+psycopg2-binary
+python-dotenv
+anthropic
+google-generativeai
+openai
+httpx
+pydantic
+python-jose[cryptography]
+groq
+pywebpush
+resend
