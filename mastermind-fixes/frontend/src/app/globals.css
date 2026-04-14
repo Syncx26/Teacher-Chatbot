@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Nordic Slate — dark (default) */
+:root,
+[data-theme="dark"] {
+  --background:     #0F172A;
+  --surface:        #1E293B;
+  --surface-alt:    #334155;
+  --border:         #334155;
+  --text-primary:   #F1F5F9;
+  --text-secondary: #94A3B8;
+  --accent:         #6366F1;
+  --accent-hover:   #818CF8;
+  --success:        #10B981;
+  --warning:        #F59E0B;
+  --danger:         #EF4444;
+}
+
+/* Editorial Ink — light */
+[data-theme="light"] {
+  --background:     #FAFAF8;
+  --surface:        #FFFFFF;
+  --surface-alt:    #F3F4F6;
+  --border:         #E5E7EB;
+  --text-primary:   #111827;
+  --text-secondary: #6B7280;
+  --accent:         #4F46E5;
+  --accent-hover:   #4338CA;
+  --success:        #059669;
+  --warning:        #D97706;
+  --danger:         #DC2626;
+}
+
+html, body {
+  background-color: var(--background);
+  color: var(--text-primary);
+  font-family: Inter, system-ui, sans-serif;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevent scroll bounce on iOS when swiping cards */
+.card-reel {
+  touch-action: none;
+  overflow: hidden;
+}

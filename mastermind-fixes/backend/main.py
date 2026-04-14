@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config import FRONTEND_URL
 from db.helpers import init_db
-from routers import curriculum, cards, chat, checkpoints, onboarding, sessions, explore, push, transcribe
+from routers import curriculum, cards, chat, checkpoints, onboarding, sessions, explore, push, transcribe, users
 
 app = FastAPI(title="Mastermind API", version="1.0.0")
 
@@ -28,6 +28,7 @@ app.include_router(checkpoints.router,  prefix="/checkpoints",  tags=["checkpoin
 app.include_router(explore.router,      prefix="/explore",      tags=["explore"])
 app.include_router(push.router,         prefix="/push",         tags=["push"])
 app.include_router(transcribe.router,   prefix="/transcribe",   tags=["transcribe"])
+app.include_router(users.router,        prefix="/users",        tags=["users"])
 
 
 @app.on_event("startup")
