@@ -64,9 +64,110 @@ export async function buildCurriculum(userId: string): Promise<Response> {
   });
 }
 
-export async function getUserCurricula(userId: string) {
+export interface CurriculumSummary {
+  id: string;
+  topic: string;
+  emoji: string | null;
+  status: "active" | "completed" | "deleted";
+  duration_weeks: number;
+  weekday_minutes: number;
+  mastery_goal: string;
+  sessions_done: number;
+  sessions_total: number;
+  created_at: string | null;
+  completed_at: string | null;
+}
+
+export async function getUserCurricula(userId: string): Promise<CurriculumSummary[]> {
   const r = await authedFetch(`/curriculum/user/${userId}`);
   return r.json();
+}
+
+export async function completeCurriculum(curriculumId: string) {
+  return authedFetch(`/curriculum/${curriculumId}/complete`, { method: "POST" });
+}
+
+export async function deleteCurriculum(curriculumId: string) {
+  return authedFetch(`/curriculum/${curriculumId}`, { method: "DELETE" });
+}
+
+export async function updateCurriculumEmoji(curriculumId: string, emoji: string) {
+  return authedFetch(`/curriculum/${curriculumId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ emoji }),
+  });
+}
+
+// User stats
+export async function getUserStats(userId: string): Promise<{
+  total_cards: number;
+  completed_cards: number;
+  streak_days: number;
+  due_reviews: number;
+  active_topics: number;
+}> {
+  const r = await authedFetch(`/users/${userId}/stats`);
+  return r.json();
+}
+
+// Export
+export function exportCurriculumUrl(curriculumId: string, format: "markdown" | "json" = "markdown"): string {
+  return `${BASE}/export/${curriculumId}?format=${format}`;
+}
+
+export async function downloadCurriculum(curriculumId: string, format: "markdown" | "json" = "markdown") {
+  const r = await authedFetch(`/export/${curriculumId}?format=${format}`);
+  const blob = await r.blob();
+  const contentDisposition = r.headers.get("content-disposition") ?? "";
+  const match = contentDisposition.match(/filename="([^"]+)"/);
+  const filename = match?.[1] ?? `mastermind-export.${format === "markdown" ? "md" : "json"}`;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Push scheduling
+export async function getPushSchedule(): Promise<{ enabled: boolean; hour: number | null }> {
+  const r = await authedFetch("/push/schedule");
+  return r.json();
+}
+
+export async function setPushSchedule(enabled: boolean, hour: number) {
+  return authedFetch("/push/schedule", {
+    method: "POST",
+    body: JSON.stringify({ enabled, hour }),
+  });
+}
+
+export async function subscribePush(subscription: PushSubscriptionJSON) {
+  return authedFetch("/push/subscribe", {
+    method: "POST",
+    body: JSON.stringify({
+      endpoint: subscription.endpoint,
+      keys: subscription.keys,
+    }),
+  });
+}
+
+export async function getVapidKey(): Promise<{ public_key: string }> {
+  const r = await fetch(`${BASE}/push/vapid-public-key`);
+  return r.json();
+}
+
+// Email digest
+export async function getDigestPreferences(): Promise<{ enabled: boolean; day: number; hour: number }> {
+  const r = await authedFetch("/email/digest/preferences");
+  return r.json();
+}
+
+export async function setDigestPreferences(enabled: boolean, day: number, hour: number) {
+  return authedFetch("/email/digest/preferences", {
+    method: "POST",
+    body: JSON.stringify({ enabled, day, hour }),
+  });
 }
 
 // Sessions

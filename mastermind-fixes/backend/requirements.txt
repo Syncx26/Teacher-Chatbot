@@ -16,3 +16,4 @@ resend
 python-multipart
 youtube-transcript-api
 beautifulsoup4
+apscheduler

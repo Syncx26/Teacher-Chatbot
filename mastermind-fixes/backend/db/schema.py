@@ -5,7 +5,7 @@ All IDs that appear in URLs are UUIDs (str). Internal join-only tables use Integ
 from datetime import datetime, date
 from sqlalchemy import (
     Column, String, Integer, Float, Boolean, DateTime, Date,
-    ForeignKey, JSON, Text, Enum
+    ForeignKey, JSON, Text
 )
 from sqlalchemy.orm import declarative_base, relationship
 
@@ -18,10 +18,19 @@ class User(Base):
     id = Column(String, primary_key=True)           # Clerk user ID
     email = Column(String, unique=True, nullable=True)
     display_name = Column(String, nullable=True)
-    language = Column(String, default="en")         # ISO 639-1 code
-    english_level = Column(String, default="fluent")  # "simple" | "fluent"
+    language = Column(String, default="en")
+    english_level = Column(String, default="fluent")
     timezone = Column(String, default="UTC")
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Push notification schedule
+    push_enabled = Column(Boolean, default=False)
+    push_hour = Column(Integer, nullable=True)       # 0–23 UTC hour to send daily reminder
+
+    # Weekly digest
+    digest_enabled = Column(Boolean, default=False)
+    digest_day = Column(Integer, default=0)          # 0=Mon … 6=Sun
+    digest_hour = Column(Integer, default=8)         # 0–23 UTC
 
     curricula = relationship("Curriculum", back_populates="user")
     push_subs = relationship("PushSubscription", back_populates="user")
@@ -33,11 +42,13 @@ class Curriculum(Base):
     id = Column(String, primary_key=True)           # UUID
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
     topic = Column(String, nullable=False)
+    emoji = Column(String, nullable=True)            # user-chosen emoji label
     duration_weeks = Column(Integer, nullable=False)
     weekday_minutes = Column(Integer, default=20)
     weekend_minutes = Column(Integer, default=0)
-    opus_json = Column(JSON, nullable=False)         # raw Opus output
-    status = Column(String, default="active")       # active | paused | complete
+    opus_json = Column(JSON, nullable=False)
+    status = Column(String, default="active")       # active | completed | deleted
+    completed_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="curricula")
@@ -51,7 +62,7 @@ class Session(Base):
     curriculum_id = Column(String, ForeignKey("curricula.id"), nullable=False)
     week_number = Column(Integer, nullable=False)
     day_number = Column(Integer, nullable=False)
-    scheduled_date = Column(Date, nullable=True)    # assigned lazily
+    scheduled_date = Column(Date, nullable=True)
     is_weekend = Column(Boolean, default=False)
     completed_at = Column(DateTime, nullable=True)
     status = Column(String, default="pending")      # pending | in_progress | done
@@ -63,10 +74,10 @@ class Session(Base):
 class Card(Base):
     __tablename__ = "cards"
 
-    id = Column(String, primary_key=True)           # UUID (used in share URLs)
+    id = Column(String, primary_key=True)           # UUID
     session_id = Column(String, ForeignKey("sessions.id"), nullable=False)
     position = Column(Integer, nullable=False)
-    card_type = Column(String, nullable=False)       # concept|exercise|checkpoint|explore|review
+    card_type = Column(String, nullable=False)
     content_json = Column(JSON, nullable=False)
     completed_at = Column(DateTime, nullable=True)
 
@@ -74,7 +85,6 @@ class Card(Base):
 
 
 class SRQueue(Base):
-    """Spaced repetition queue — one row per card review event."""
     __tablename__ = "sr_queue"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -84,7 +94,7 @@ class SRQueue(Base):
     interval_days = Column(Float, default=1.0)
     ease_factor = Column(Float, default=2.5)
     repetitions = Column(Integer, default=0)
-    last_grade = Column(Integer, nullable=True)     # 0-5 SM-2 grade
+    last_grade = Column(Integer, nullable=True)
 
 
 class ExploreCache(Base):
@@ -116,11 +126,7 @@ class PushSubscription(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
     endpoint = Column(Text, nullable=False, unique=True)
-    keys_json = Column(JSON, nullable=False)        # {p256dh, auth}
+    keys_json = Column(JSON, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="push_subs")
-
-
-def init_db(engine):
-    Base.metadata.create_all(engine)

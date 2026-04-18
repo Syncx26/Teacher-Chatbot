@@ -3,6 +3,7 @@ Curriculum router — Opus builds the curriculum, we stream it back and save to 
 """
 import json
 import uuid
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -146,11 +147,71 @@ def get_user_curricula(user_id: str, claims: dict = Depends(verify_token)):
     with get_db() as db:
         curricula = (
             db.query(Curriculum)
-            .filter(Curriculum.user_id == user_id, Curriculum.status == "active")
+            .filter(Curriculum.user_id == user_id, Curriculum.status.in_(["active", "completed"]))
+            .order_by(Curriculum.created_at.desc())
             .all()
         )
-        return [
-            {"id": c.id, "topic": c.topic, "status": c.status,
-             "duration_weeks": c.duration_weeks}
-            for c in curricula
-        ]
+        result = []
+        for c in curricula:
+            sessions_done = sum(1 for s in c.sessions if s.status == "done")
+            sessions_total = len(c.sessions)
+            result.append({
+                "id": c.id,
+                "topic": c.topic,
+                "emoji": c.emoji,
+                "status": c.status,
+                "duration_weeks": c.duration_weeks,
+                "weekday_minutes": c.weekday_minutes,
+                "mastery_goal": c.opus_json.get("mastery_goal", ""),
+                "sessions_done": sessions_done,
+                "sessions_total": sessions_total,
+                "created_at": c.created_at.isoformat() if c.created_at else None,
+                "completed_at": c.completed_at.isoformat() if c.completed_at else None,
+            })
+        return result
+
+
+@router.post("/{curriculum_id}/complete")
+def complete_curriculum(curriculum_id: str, claims: dict = Depends(verify_token)):
+    user_id = claims["sub"]
+    with get_db() as db:
+        c = db.query(Curriculum).filter(
+            Curriculum.id == curriculum_id,
+            Curriculum.user_id == user_id,
+        ).first()
+        if not c:
+            raise HTTPException(status_code=404, detail="Curriculum not found")
+        c.status = "completed"
+        c.completed_at = datetime.utcnow()
+    return {"ok": True}
+
+
+@router.delete("/{curriculum_id}")
+def delete_curriculum(curriculum_id: str, claims: dict = Depends(verify_token)):
+    user_id = claims["sub"]
+    with get_db() as db:
+        c = db.query(Curriculum).filter(
+            Curriculum.id == curriculum_id,
+            Curriculum.user_id == user_id,
+        ).first()
+        if not c:
+            raise HTTPException(status_code=404, detail="Curriculum not found")
+        if c.status == "completed":
+            raise HTTPException(status_code=400, detail="Cannot delete a completed curriculum — export it first")
+        c.status = "deleted"
+    return {"ok": True}
+
+
+@router.patch("/{curriculum_id}")
+def update_curriculum(curriculum_id: str, body: dict, claims: dict = Depends(verify_token)):
+    user_id = claims["sub"]
+    with get_db() as db:
+        c = db.query(Curriculum).filter(
+            Curriculum.id == curriculum_id,
+            Curriculum.user_id == user_id,
+        ).first()
+        if not c:
+            raise HTTPException(status_code=404, detail="Curriculum not found")
+        if "emoji" in body:
+            c.emoji = body["emoji"]
+    return {"ok": True}
