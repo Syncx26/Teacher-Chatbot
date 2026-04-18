@@ -33,6 +33,10 @@ interface MastermindState {
   // Ask Nova drawer
   novaOpen: boolean;
   setNovaOpen: (open: boolean) => void;
+
+  // Active curriculum for multi-topic support
+  activeCurriculumId: string | null;
+  setActiveCurriculumId: (id: string | null) => void;
 }
 
 export const useStore = create<MastermindState>()(
@@ -65,6 +69,10 @@ export const useStore = create<MastermindState>()(
       // Nova
       novaOpen: false,
       setNovaOpen: (open) => set({ novaOpen: open }),
+
+      // Active curriculum
+      activeCurriculumId: null,
+      setActiveCurriculumId: (id) => set({ activeCurriculumId: id }),
     }),
     {
       name: "mastermind-store",
@@ -76,6 +84,7 @@ export const useStore = create<MastermindState>()(
         englishLevel: s.englishLevel,
         currentSessionId: s.currentSessionId,
         currentCardIndex: s.currentCardIndex,
+        activeCurriculumId: s.activeCurriculumId,
       }),
     }
   )

@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useStore } from "@/lib/store";
+import { getUserStats } from "@/lib/api";
 import { BottomNav } from "@/components/BottomNav";
-
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export default function ProgressPage() {
   const userId = useStore((s) => s.userId);
@@ -13,16 +12,12 @@ export default function ProgressPage() {
     completed_cards: number;
     streak_days: number;
     due_reviews: number;
+    active_topics: number;
   } | null>(null);
 
   useEffect(() => {
     if (!userId) return;
-    fetch(`${BASE}/users/${userId}/stats`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem("clerk_token") ?? ""}` },
-    })
-      .then((r) => r.json())
-      .then(setStats)
-      .catch(console.error);
+    getUserStats(userId).then(setStats).catch(console.error);
   }, [userId]);
 
   const pct = stats ? Math.round((stats.completed_cards / Math.max(stats.total_cards, 1)) * 100) : 0;
@@ -64,10 +59,13 @@ export default function ProgressPage() {
         {/* Stats grid */}
         <div className="grid grid-cols-2 gap-3 mb-6">
           {[
-            { label: "Cards Done",   value: stats?.completed_cards ?? "—" },
-            { label: "Day Streak",   value: stats ? `${stats.streak_days} 🔥` : "—" },
-            { label: "Total Cards",  value: stats?.total_cards ?? "—" },
-            { label: "Due Reviews",  value: stats?.due_reviews ?? "—" },
+            { label: "Cards Done",    value: stats?.completed_cards ?? "—" },
+            { label: "Day Streak",    value: stats ? `${stats.streak_days} 🔥` : "—" },
+            { label: "Total Cards",   value: stats?.total_cards ?? "—" },
+            { label: "Due Reviews",   value: stats?.due_reviews ?? "—" },
+            ...(stats?.active_topics != null
+              ? [{ label: "Active Topics", value: stats.active_topics }]
+              : []),
           ].map((s) => (
             <div
               key={s.label}
