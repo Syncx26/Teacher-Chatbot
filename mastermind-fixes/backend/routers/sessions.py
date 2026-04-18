@@ -13,6 +13,12 @@ router = APIRouter()
 def get_today_session(curriculum_id: str, claims: dict = Depends(verify_token)):
     user_id = claims["sub"]
     with get_db() as db:
+        owned = db.query(Curriculum).filter(
+            Curriculum.id == curriculum_id,
+            Curriculum.user_id == user_id,
+        ).first()
+        if not owned:
+            raise HTTPException(status_code=404, detail="Curriculum not found")
         session = get_or_create_session(curriculum_id, date.today(), db)
         if not session:
             return {"done": True, "message": "No session scheduled for today."}
@@ -51,9 +57,15 @@ def get_today_session(curriculum_id: str, claims: dict = Depends(verify_token)):
 
 @router.post("/{session_id}/complete")
 def complete_session(session_id: str, claims: dict = Depends(verify_token)):
+    user_id = claims["sub"]
     with get_db() as db:
         from datetime import datetime
-        session = db.query(Session).filter(Session.id == session_id).first()
+        session = (
+            db.query(Session)
+            .join(Curriculum, Session.curriculum_id == Curriculum.id)
+            .filter(Session.id == session_id, Curriculum.user_id == user_id)
+            .first()
+        )
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
         session.status = "done"
@@ -63,8 +75,14 @@ def complete_session(session_id: str, claims: dict = Depends(verify_token)):
 
 @router.get("/{session_id}")
 def get_session(session_id: str, claims: dict = Depends(verify_token)):
+    user_id = claims["sub"]
     with get_db() as db:
-        session = db.query(Session).filter(Session.id == session_id).first()
+        session = (
+            db.query(Session)
+            .join(Curriculum, Session.curriculum_id == Curriculum.id)
+            .filter(Session.id == session_id, Curriculum.user_id == user_id)
+            .first()
+        )
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
         cards = (

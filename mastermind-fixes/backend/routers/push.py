@@ -86,6 +86,8 @@ def get_push_schedule(claims: dict = Depends(verify_token)):
 
 @router.post("/send")
 def send_push(body: SendBody, claims: dict = Depends(verify_token)):
+    if claims["sub"] != body.user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     if not VAPID_PRIVATE_KEY:
         raise HTTPException(status_code=503, detail="Push not configured")
 

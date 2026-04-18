@@ -2,6 +2,7 @@
 Weekly email digest — sends a summary of the past week via Resend.
 Call POST /email/digest/{user_id} manually or from the APScheduler job.
 """
+import html as _html
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -14,7 +15,7 @@ router = APIRouter()
 
 
 def _build_html(user: User, stats: dict) -> str:
-    name = user.display_name or user.email or "there"
+    name = _html.escape(user.display_name or user.email or "there")
     topic_list = "".join(
         f'<li style="margin:4px 0;color:#C9C0AE;">{t}</li>'
         for t in stats["topics"]
@@ -185,8 +186,8 @@ def _collect_stats(user_id: str) -> dict:
     }
 
 
-async def send_digest_for_user(user_id: str):
-    """Called by scheduler or manual trigger."""
+def send_digest_for_user(user_id: str):
+    """Called by scheduler or manual trigger. Synchronous — safe to call from threads."""
     if not RESEND_API_KEY:
         return
 
@@ -245,7 +246,9 @@ def get_digest_preferences(claims: dict = Depends(verify_token)):
 
 
 @router.post("/digest/send-now/{user_id}")
-async def send_now(user_id: str, claims: dict = Depends(verify_token)):
+def send_now(user_id: str, claims: dict = Depends(verify_token)):
     """Manual trigger for testing."""
-    await send_digest_for_user(user_id)
+    if claims["sub"] != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    send_digest_for_user(user_id)
     return {"ok": True}

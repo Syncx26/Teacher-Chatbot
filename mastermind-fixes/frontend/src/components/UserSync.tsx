@@ -15,15 +15,31 @@ export function UserSync() {
 
     setUser(user.id);
 
-    getToken().then((token) => {
-      setAuthToken(token);
-      syncUser(
-        user.id,
-        user.primaryEmailAddress?.emailAddress ?? null,
-        user.fullName ?? null,
-      ).catch(console.error);
-    });
-  }, [user?.id, isLoaded]);
+    async function refreshToken() {
+      try {
+        const token = await getToken({ skipCache: true });
+        setAuthToken(token);
+      } catch {
+        setAuthToken(null);
+      }
+    }
+
+    // Initial sync
+    getToken()
+      .then((token) => {
+        setAuthToken(token);
+        return syncUser(
+          user.id,
+          user.primaryEmailAddress?.emailAddress ?? null,
+          user.fullName ?? null,
+        );
+      })
+      .catch(console.error);
+
+    // Refresh token every 50 minutes (Clerk tokens expire after 60 minutes)
+    const interval = setInterval(refreshToken, 50 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [user?.id, isLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return null;
 }

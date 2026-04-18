@@ -1,9 +1,9 @@
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from auth import verify_token
 from db.helpers import get_db
-from db.schema import Card
+from db.schema import Card, Session, Curriculum
 from sr.engine import record_review
 
 router = APIRouter()
@@ -13,12 +13,24 @@ class SwipeBody(BaseModel):
     grade: int  # 0-5 SM-2 grade
 
 
+def _get_owned_card(card_id: str, user_id: str, db) -> Card:
+    card = (
+        db.query(Card)
+        .join(Session, Card.session_id == Session.id)
+        .join(Curriculum, Session.curriculum_id == Curriculum.id)
+        .filter(Card.id == card_id, Curriculum.user_id == user_id)
+        .first()
+    )
+    if not card:
+        raise HTTPException(status_code=404, detail="Card not found")
+    return card
+
+
 @router.get("/{card_id}")
 def get_card(card_id: str, claims: dict = Depends(verify_token)):
+    user_id = claims["sub"]
     with get_db() as db:
-        card = db.query(Card).filter(Card.id == card_id).first()
-        if not card:
-            raise HTTPException(status_code=404, detail="Card not found")
+        card = _get_owned_card(card_id, user_id, db)
         return {
             "id": card.id,
             "card_type": card.card_type,
@@ -35,7 +47,7 @@ def swipe_card(card_id: str, body: SwipeBody, claims: dict = Depends(verify_toke
         raise HTTPException(status_code=400, detail="Grade must be 0-5")
 
     with get_db() as db:
-        card = db.query(Card).filter(Card.id == card_id).first()
+        card = _get_owned_card(card_id, user_id, db)
         if not card:
             raise HTTPException(status_code=404, detail="Card not found")
 

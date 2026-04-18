@@ -126,8 +126,12 @@ def build_curriculum(body: BuildBody, claims: dict = Depends(verify_token)):
 
 @router.get("/{curriculum_id}")
 def get_curriculum(curriculum_id: str, claims: dict = Depends(verify_token)):
+    user_id = claims["sub"]
     with get_db() as db:
-        c = db.query(Curriculum).filter(Curriculum.id == curriculum_id).first()
+        c = db.query(Curriculum).filter(
+            Curriculum.id == curriculum_id,
+            Curriculum.user_id == user_id,
+        ).first()
         if not c:
             raise HTTPException(status_code=404, detail="Curriculum not found")
         return {
@@ -144,6 +148,8 @@ def get_curriculum(curriculum_id: str, claims: dict = Depends(verify_token)):
 
 @router.get("/user/{user_id}")
 def get_user_curricula(user_id: str, claims: dict = Depends(verify_token)):
+    if claims["sub"] != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     with get_db() as db:
         curricula = (
             db.query(Curriculum)
@@ -202,8 +208,12 @@ def delete_curriculum(curriculum_id: str, claims: dict = Depends(verify_token)):
     return {"ok": True}
 
 
+class UpdateCurriculumBody(BaseModel):
+    emoji: str | None = None
+
+
 @router.patch("/{curriculum_id}")
-def update_curriculum(curriculum_id: str, body: dict, claims: dict = Depends(verify_token)):
+def update_curriculum(curriculum_id: str, body: UpdateCurriculumBody, claims: dict = Depends(verify_token)):
     user_id = claims["sub"]
     with get_db() as db:
         c = db.query(Curriculum).filter(
@@ -212,6 +222,6 @@ def update_curriculum(curriculum_id: str, body: dict, claims: dict = Depends(ver
         ).first()
         if not c:
             raise HTTPException(status_code=404, detail="Curriculum not found")
-        if "emoji" in body:
-            c.emoji = body["emoji"]
+        if body.emoji is not None:
+            c.emoji = body.emoji[:8]  # Limit emoji field length
     return {"ok": True}

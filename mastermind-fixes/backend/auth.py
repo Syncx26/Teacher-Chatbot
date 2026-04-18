@@ -2,6 +2,7 @@
 Clerk JWT verification using python-jose and Clerk's JWKS endpoint.
 Requires CLERK_JWKS_URL in your .env (e.g. https://<clerk-domain>/.well-known/jwks.json).
 """
+import time
 import httpx
 from jose import jwt, JWTError
 from fastapi import HTTPException, Security
@@ -10,14 +11,17 @@ from config import CLERK_JWKS_URL
 
 _bearer = HTTPBearer()
 _jwks_cache: dict | None = None
+_jwks_fetched_at: float = 0.0
+_JWKS_TTL = 86400  # refresh every 24 hours
 
 
 def _get_jwks() -> dict:
-    global _jwks_cache
-    if _jwks_cache is None:
+    global _jwks_cache, _jwks_fetched_at
+    if _jwks_cache is None or (time.time() - _jwks_fetched_at) > _JWKS_TTL:
         resp = httpx.get(CLERK_JWKS_URL, timeout=5)
         resp.raise_for_status()
         _jwks_cache = resp.json()
+        _jwks_fetched_at = time.time()
     return _jwks_cache
 
 

@@ -76,8 +76,7 @@ def _hourly_job():
 
     for user_id in digest_user_ids:
         try:
-            import asyncio
-            asyncio.run(send_digest_for_user(user_id))
+            send_digest_for_user(user_id)
         except Exception as e:
             print(f"Digest error for {user_id}: {e}")
 
