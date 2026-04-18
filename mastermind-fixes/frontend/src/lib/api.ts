@@ -1,15 +1,18 @@
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
+// Token is set by UserSync after Clerk initialises
+let _authToken: string | null = null;
+
+export function setAuthToken(token: string | null) {
+  _authToken = token;
+}
+
 async function authedFetch(path: string, options: RequestInit = {}): Promise<Response> {
-  // Clerk provides the token via the getToken() helper in server components,
-  // but on the client we grab it from the Clerk session.
-  const { getToken } = await import("@clerk/nextjs/client" as never) as { getToken: () => Promise<string | null> };
-  const token = await getToken();
   return fetch(`${BASE}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(_authToken ? { Authorization: `Bearer ${_authToken}` } : {}),
       ...(options.headers ?? {}),
     },
   });
@@ -95,13 +98,11 @@ export async function getExploreCards(userId: string) {
 
 // Transcribe
 export async function transcribeAudio(audioBlob: Blob): Promise<string> {
-  const { getToken } = await import("@clerk/nextjs/client" as never) as { getToken: () => Promise<string | null> };
-  const token = await getToken();
   const form = new FormData();
   form.append("audio", audioBlob, "audio.webm");
   const r = await fetch(`${BASE}/transcribe`, {
     method: "POST",
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    headers: _authToken ? { Authorization: `Bearer ${_authToken}` } : {},
     body: form,
   });
   const data = await r.json();
