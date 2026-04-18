@@ -13,3 +13,4 @@ python-jose[cryptography]
 groq
 pywebpush
 resend
+python-multipart
