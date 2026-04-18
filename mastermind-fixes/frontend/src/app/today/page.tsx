@@ -50,28 +50,40 @@ export default function TodayPage() {
 
   if (!isLoaded || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--background)" }}>
-        <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "var(--accent)" }} />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg)" }}>
+        <div
+          className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
+          style={{ borderColor: "var(--accent)" }}
+        />
       </div>
     );
   }
 
   if (done) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center" style={{ background: "var(--background)" }}>
-        <div className="w-20 h-20 rounded-full flex items-center justify-center mb-6" style={{ background: "var(--surface)" }}>
-          <span className="text-4xl">✦</span>
+      <div
+        className="min-h-screen flex flex-col items-center justify-center p-6 text-center"
+        style={{ background: "var(--bg)" }}
+      >
+        <div
+          className="w-20 h-20 rounded-full flex items-center justify-center mb-6"
+          style={{ background: "var(--bg-card)", border: "1px solid var(--hairline)" }}
+        >
+          <span className="text-4xl font-display">✦</span>
         </div>
-        <h1 className="text-2xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>
+        <h1
+          className="font-display text-3xl font-bold mb-2"
+          style={{ color: "var(--ink)" }}
+        >
           Session complete
         </h1>
-        <p className="text-sm mb-8" style={{ color: "var(--text-secondary)" }}>
+        <p className="text-sm mb-8" style={{ color: "var(--ink-mute)" }}>
           See you tomorrow. The next concept is waiting.
         </p>
         <button
           onClick={() => router.push("/explore")}
-          className="rounded-xl px-6 py-3 font-semibold text-sm"
-          style={{ background: "var(--accent)", color: "#fff" }}
+          className="rounded-full px-8 py-3 font-semibold text-sm"
+          style={{ background: "var(--mark)", color: "var(--bg)" }}
         >
           Explore more →
         </button>
@@ -82,22 +94,22 @@ export default function TodayPage() {
 
   if (!sessionData || !sessionData.cards.length) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--background)" }}>
-        <p style={{ color: "var(--text-secondary)" }}>No session for today.</p>
+      <div className="min-h-screen flex flex-col items-center justify-center" style={{ background: "var(--bg)" }}>
+        <p style={{ color: "var(--ink-mute)" }}>No session for today.</p>
         <BottomNav />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "var(--background)" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "var(--bg)" }}>
       {/* Progress bar */}
-      <div className="h-1 w-full" style={{ background: "var(--surface-alt)" }}>
+      <div className="h-0.5 w-full" style={{ background: "var(--bg-elev)" }}>
         <div
           className="h-full transition-all duration-300"
           style={{
-            background: "var(--accent)",
-            width: `${(sessionData.cards.length > 0 ? 1 / sessionData.cards.length : 0) * 100}%`,
+            background: "var(--mark)",
+            width: `${(1 / sessionData.cards.length) * 100}%`,
           }}
         />
       </div>

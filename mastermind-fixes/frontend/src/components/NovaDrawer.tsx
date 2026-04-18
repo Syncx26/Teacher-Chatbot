@@ -64,16 +64,17 @@ export function NovaDrawer({ cardId }: Props) {
         <>
           <motion.div
             className="fixed inset-0 z-40"
-            style={{ background: "rgba(0,0,0,0.5)" }}
+            style={{ background: "rgba(0,0,0,0.6)" }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setNovaOpen(false)}
           />
           <motion.div
-            className="fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl flex flex-col"
+            className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl flex flex-col"
             style={{
-              background: "var(--surface)",
+              background: "var(--bg-card)",
+              borderTop: "1px solid var(--hairline)",
               maxHeight: "70vh",
               paddingBottom: "env(safe-area-inset-bottom)",
             }}
@@ -84,20 +85,34 @@ export function NovaDrawer({ cardId }: Props) {
           >
             {/* Handle */}
             <div className="flex justify-center pt-3 pb-2">
-              <div className="w-10 h-1 rounded-full" style={{ background: "var(--border)" }} />
+              <div className="w-10 h-1 rounded-full" style={{ background: "var(--hairline)" }} />
             </div>
 
             {/* Header */}
-            <div className="flex items-center justify-between px-4 pb-3" style={{ borderBottom: "1px solid var(--border)" }}>
-              <span className="font-semibold" style={{ color: "var(--text-primary)" }}>Ask Nova</span>
-              <button onClick={() => setNovaOpen(false)} style={{ color: "var(--text-secondary)" }}>✕</button>
+            <div
+              className="flex items-center justify-between px-4 pb-3"
+              style={{ borderBottom: "1px solid var(--hairline)" }}
+            >
+              <span className="font-display font-bold text-lg" style={{ color: "var(--ink)" }}>
+                Ask Nova
+              </span>
+              <button
+                onClick={() => setNovaOpen(false)}
+                className="w-8 h-8 rounded-full flex items-center justify-center"
+                style={{ background: "var(--bg-elev)", color: "var(--ink-mute)" }}
+              >
+                ✕
+              </button>
             </div>
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-0">
               {messages.length === 0 && (
-                <p className="text-sm text-center" style={{ color: "var(--text-secondary)" }}>
-                  Long-press any card to ask Nova a question.
+                <p
+                  className="text-sm text-center py-4"
+                  style={{ color: "var(--ink-mute)" }}
+                >
+                  Long-press any card to open Nova.
                 </p>
               )}
               {messages.map((m, i) => (
@@ -105,29 +120,36 @@ export function NovaDrawer({ cardId }: Props) {
                   <div
                     className="rounded-2xl px-3 py-2 text-sm max-w-[85%]"
                     style={{
-                      background: m.role === "user" ? "var(--accent)" : "var(--surface-alt)",
-                      color: m.role === "user" ? "#fff" : "var(--text-primary)",
+                      background: m.role === "user" ? "var(--accent)" : "var(--bg-elev)",
+                      color: m.role === "user" ? "var(--bg)" : "var(--ink)",
                     }}
                   >
-                    {m.content || <span className="opacity-50">…</span>}
+                    {m.content || <span style={{ opacity: 0.4 }}>…</span>}
                   </div>
                 </div>
               ))}
             </div>
 
             {/* Input */}
-            <div className="flex items-center gap-2 px-4 py-3" style={{ borderTop: "1px solid var(--border)" }}>
+            <div
+              className="flex items-center gap-2 px-4 py-3"
+              style={{ borderTop: "1px solid var(--hairline)" }}
+            >
               <button
                 onPointerDown={startRecording}
                 onPointerUp={stopRecording}
-                className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-                style={{ background: recording ? "var(--danger)" : "var(--surface-alt)" }}
+                className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-base"
+                style={{ background: recording ? "var(--danger)" : "var(--bg-elev)" }}
               >
                 🎤
               </button>
               <input
                 className="flex-1 rounded-xl px-3 py-2 text-sm outline-none"
-                style={{ background: "var(--surface-alt)", color: "var(--text-primary)" }}
+                style={{
+                  background: "var(--bg-elev)",
+                  color: "var(--ink)",
+                  border: "1px solid var(--hairline)",
+                }}
                 placeholder="Ask anything…"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -136,8 +158,12 @@ export function NovaDrawer({ cardId }: Props) {
               <button
                 onClick={() => send(input)}
                 disabled={streaming || !input.trim()}
-                className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-                style={{ background: "var(--accent)", color: "#fff", opacity: streaming || !input.trim() ? 0.5 : 1 }}
+                className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 font-bold"
+                style={{
+                  background: "var(--accent)",
+                  color: "var(--bg)",
+                  opacity: streaming || !input.trim() ? 0.4 : 1,
+                }}
               >
                 ↑
               </button>

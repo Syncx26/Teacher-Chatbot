@@ -17,26 +17,33 @@ export function ExerciseCard({ content, onAnswer }: Props) {
   const [revealed, setRevealed] = useState(false);
   const [hintIndex, setHintIndex] = useState(0);
 
-  function reveal() {
-    setRevealed(true);
-  }
-
   return (
     <div className="flex flex-col gap-4 p-6 h-full">
-      <span className="text-xs font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full w-fit"
-        style={{ background: "var(--warning)", color: "#000" }}>
+      {/* Badge */}
+      <span
+        className="font-label w-fit px-2 py-0.5 rounded-full"
+        style={{ background: "rgba(217,150,112,0.15)", color: "var(--mark)" }}
+      >
         Exercise
       </span>
 
-      <p className="text-lg font-medium leading-snug" style={{ color: "var(--text-primary)" }}>
+      <p
+        className="font-display text-xl font-bold leading-snug"
+        style={{ color: "var(--ink)" }}
+      >
         {content.prompt}
       </p>
 
       {!revealed ? (
         <>
           <textarea
-            className="w-full rounded-xl p-3 text-sm resize-none outline-none"
-            style={{ background: "var(--surface-alt)", color: "var(--text-primary)", minHeight: 100 }}
+            className="w-full rounded-2xl p-3 text-sm resize-none outline-none"
+            style={{
+              background: "var(--bg-elev)",
+              border: "1px solid var(--hairline)",
+              color: "var(--ink)",
+              minHeight: 100,
+            }}
             placeholder="Type your answer…"
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -46,52 +53,62 @@ export function ExerciseCard({ content, onAnswer }: Props) {
             <button
               onClick={() => setHintIndex((i) => Math.min(i + 1, content.hints.length))}
               className="text-sm underline text-left"
-              style={{ color: "var(--text-secondary)" }}
+              style={{ color: "var(--accent)" }}
             >
               Need a hint?
             </button>
           )}
 
           {hintIndex > 0 && (
-            <div className="rounded-xl p-3" style={{ background: "var(--surface-alt)" }}>
+            <div
+              className="rounded-2xl p-3 mark-rule"
+              style={{ background: "var(--bg-elev)" }}
+            >
               {content.hints.slice(0, hintIndex).map((h, i) => (
-                <p key={i} className="text-sm" style={{ color: "var(--text-primary)" }}>💡 {h}</p>
+                <p key={i} className="text-sm" style={{ color: "var(--ink-soft)" }}>
+                  💡 {h}
+                </p>
               ))}
             </div>
           )}
 
           <button
-            onClick={reveal}
+            onClick={() => setRevealed(true)}
             disabled={!input.trim()}
-            className="w-full rounded-xl py-3 font-semibold text-sm mt-auto"
-            style={{ background: "var(--accent)", color: "#fff", opacity: !input.trim() ? 0.5 : 1 }}
+            className="w-full rounded-full py-3 font-semibold text-sm mt-auto transition-opacity"
+            style={{
+              background: "var(--accent)",
+              color: "var(--bg)",
+              opacity: !input.trim() ? 0.4 : 1,
+            }}
           >
             Check Answer
           </button>
         </>
       ) : (
         <>
-          <div className="rounded-xl p-4" style={{ background: "var(--surface-alt)" }}>
-            <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "var(--success)" }}>
-              Answer
-            </p>
-            <p className="text-sm" style={{ color: "var(--text-primary)" }}>{content.answer}</p>
+          <div
+            className="rounded-2xl p-4"
+            style={{ background: "var(--bg-elev)", borderLeft: "3px solid var(--good)" }}
+          >
+            <p className="font-label mb-1" style={{ color: "var(--good)" }}>Answer</p>
+            <p className="text-sm" style={{ color: "var(--ink)" }}>{content.answer}</p>
           </div>
 
-          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{content.explanation}</p>
+          <p className="text-sm" style={{ color: "var(--ink-mute)" }}>{content.explanation}</p>
 
           <div className="flex gap-3 mt-auto">
             <button
               onClick={() => onAnswer(false)}
-              className="flex-1 rounded-xl py-3 text-sm font-semibold"
-              style={{ background: "var(--surface-alt)", color: "var(--danger)" }}
+              className="flex-1 rounded-full py-3 text-sm font-semibold"
+              style={{ background: "var(--bg-elev)", color: "var(--danger)", border: "1px solid var(--danger)" }}
             >
               Got it wrong
             </button>
             <button
               onClick={() => onAnswer(true)}
-              className="flex-1 rounded-xl py-3 text-sm font-semibold"
-              style={{ background: "var(--success)", color: "#fff" }}
+              className="flex-1 rounded-full py-3 text-sm font-semibold"
+              style={{ background: "var(--good)", color: "var(--bg)" }}
             >
               Got it right
             </button>

@@ -60,13 +60,13 @@ export function CardReel({ cards, onComplete }: Props) {
 
     if (dy < -60) {
       hapticMedium();
-      advance(4); // swipe up → grade 4
+      advance(4);
     } else if (dx > 80) {
       hapticLight();
-      advance(5); // swipe right → too easy, grade 5
+      advance(5);
     } else if (dx < -80) {
       hapticHeavy();
-      advance(1); // swipe left → confused, grade 1
+      advance(1);
     }
 
     y.set(0);
@@ -90,11 +90,12 @@ export function CardReel({ cards, onComplete }: Props) {
       {/* Ghost next card */}
       {nextCard && (
         <div
-          className="absolute inset-0 rounded-2xl pointer-events-none"
+          className="absolute inset-0 rounded-3xl pointer-events-none"
           style={{
-            background: "var(--surface)",
-            transform: "scale(0.94) translateY(12px)",
-            opacity: 0.5,
+            background: "var(--bg-card)",
+            border: "1px solid var(--hairline)",
+            transform: "scale(0.94) translateY(14px)",
+            opacity: 0.4,
             zIndex: 0,
           }}
         />
@@ -104,9 +105,10 @@ export function CardReel({ cards, onComplete }: Props) {
       <AnimatePresence mode="wait">
         <motion.div
           key={card.id}
-          className="absolute inset-0 rounded-2xl overflow-y-auto"
+          className="absolute inset-0 rounded-3xl overflow-y-auto"
           style={{
-            background: "var(--surface)",
+            background: "var(--bg-card)",
+            border: "1px solid var(--hairline)",
             y,
             x,
             opacity,

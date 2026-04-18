@@ -24,40 +24,52 @@ export default function SettingsPage() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "var(--background)" }}>
-      <div className="flex-1 p-6 pb-24 space-y-6">
-        <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Settings</h1>
+    <div className="min-h-screen flex flex-col" style={{ background: "var(--bg)" }}>
+      <div className="flex-1 p-6 pb-24 space-y-5">
+        <p className="font-label" style={{ color: "var(--mark)" }}>Preferences</p>
+        <h1 className="font-display text-3xl font-bold" style={{ color: "var(--ink)" }}>Settings</h1>
 
         {/* Theme */}
-        <div className="rounded-2xl p-4" style={{ background: "var(--surface)" }}>
-          <p className="text-sm font-semibold mb-3" style={{ color: "var(--text-primary)" }}>Appearance</p>
+        <div
+          className="rounded-2xl p-4"
+          style={{ background: "var(--bg-card)", border: "1px solid var(--hairline)" }}
+        >
+          <p className="font-label mb-3" style={{ color: "var(--ink-mute)" }}>Appearance</p>
           <button
             onClick={toggleTheme}
             className="flex items-center justify-between w-full"
           >
-            <span className="text-sm" style={{ color: "var(--text-secondary)" }}>
-              {theme === "dark" ? "Nordic Slate (dark)" : "Editorial Ink (light)"}
+            <span className="text-sm font-medium" style={{ color: "var(--ink)" }}>
+              {theme === "dark" ? "Nordic Slate — dark" : "Editorial Ink — light"}
             </span>
-            <div className="w-12 h-6 rounded-full relative transition-colors duration-200"
-              style={{ background: theme === "dark" ? "var(--accent)" : "var(--surface-alt)" }}>
-              <div className="absolute w-5 h-5 rounded-full top-0.5 transition-all duration-200 bg-white shadow"
-                style={{ left: theme === "dark" ? "calc(100% - 22px)" : "2px" }} />
+            <div
+              className="w-12 h-6 rounded-full relative transition-colors duration-200"
+              style={{ background: theme === "dark" ? "var(--accent)" : "var(--bg-elev)" }}
+            >
+              <div
+                className="absolute w-5 h-5 rounded-full top-0.5 transition-all duration-200 bg-white shadow"
+                style={{ left: theme === "dark" ? "calc(100% - 22px)" : "2px" }}
+              />
             </div>
           </button>
         </div>
 
         {/* Language */}
-        <div className="rounded-2xl p-4" style={{ background: "var(--surface)" }}>
-          <p className="text-sm font-semibold mb-3" style={{ color: "var(--text-primary)" }}>Card Language</p>
+        <div
+          className="rounded-2xl p-4"
+          style={{ background: "var(--bg-card)", border: "1px solid var(--hairline)" }}
+        >
+          <p className="font-label mb-3" style={{ color: "var(--ink-mute)" }}>Card Language</p>
           <div className="grid grid-cols-2 gap-2">
             {LANGUAGES.map((l) => (
               <button
                 key={l.code}
                 onClick={() => setLanguage(l.code)}
-                className="rounded-xl px-3 py-2 text-sm text-left"
+                className="rounded-xl px-3 py-2 text-sm text-left font-medium transition-colors"
                 style={{
-                  background: language === l.code ? "var(--accent)" : "var(--surface-alt)",
-                  color: language === l.code ? "#fff" : "var(--text-primary)",
+                  background: language === l.code ? "var(--accent)" : "var(--bg-elev)",
+                  color: language === l.code ? "var(--bg)" : "var(--ink)",
+                  border: language === l.code ? "1px solid transparent" : "1px solid var(--hairline)",
                 }}
               >
                 {l.label}
@@ -67,23 +79,27 @@ export default function SettingsPage() {
         </div>
 
         {/* English level */}
-        <div className="rounded-2xl p-4" style={{ background: "var(--surface)" }}>
-          <p className="text-sm font-semibold mb-1" style={{ color: "var(--text-primary)" }}>English Complexity</p>
-          <p className="text-xs mb-3" style={{ color: "var(--text-secondary)" }}>
-            Affects how Nova explains concepts in English
+        <div
+          className="rounded-2xl p-4"
+          style={{ background: "var(--bg-card)", border: "1px solid var(--hairline)" }}
+        >
+          <p className="font-label mb-1" style={{ color: "var(--ink-mute)" }}>English Complexity</p>
+          <p className="text-xs mb-3" style={{ color: "var(--ink-mute)" }}>
+            How Nova explains concepts in English
           </p>
           <div className="grid grid-cols-2 gap-2">
             {(["simple", "fluent"] as const).map((level) => (
               <button
                 key={level}
                 onClick={() => setEnglishLevel(level)}
-                className="rounded-xl px-3 py-2 text-sm capitalize"
+                className="rounded-xl px-3 py-2 text-sm font-medium transition-colors"
                 style={{
-                  background: englishLevel === level ? "var(--accent)" : "var(--surface-alt)",
-                  color: englishLevel === level ? "#fff" : "var(--text-primary)",
+                  background: englishLevel === level ? "var(--accent)" : "var(--bg-elev)",
+                  color: englishLevel === level ? "var(--bg)" : "var(--ink)",
+                  border: englishLevel === level ? "1px solid transparent" : "1px solid var(--hairline)",
                 }}
               >
-                {level === "simple" ? "Simple (≤12 word sentences)" : "Fluent (normal)"}
+                {level === "simple" ? "Simple" : "Fluent"}
               </button>
             ))}
           </div>
@@ -92,8 +108,12 @@ export default function SettingsPage() {
         {/* Sign out */}
         <button
           onClick={() => signOut(() => router.push("/sign-in"))}
-          className="w-full rounded-xl py-3 text-sm font-semibold"
-          style={{ background: "var(--surface)", color: "var(--danger)", border: "1px solid var(--danger)" }}
+          className="w-full rounded-full py-3 text-sm font-semibold"
+          style={{
+            background: "transparent",
+            color: "var(--danger)",
+            border: "1px solid var(--danger)",
+          }}
         >
           Sign Out
         </button>

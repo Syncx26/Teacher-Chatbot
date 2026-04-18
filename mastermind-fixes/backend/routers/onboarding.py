@@ -26,6 +26,7 @@ class StartBody(BaseModel):
     duration_weeks: int
     weekday_minutes: int
     weekend_minutes: int
+    context: str | None = None  # extracted text from URL/YouTube ingestion
 
 
 class AnswerBody(BaseModel):
@@ -40,6 +41,7 @@ def start_onboarding(body: StartBody, claims: dict = Depends(verify_token)):
         "duration_weeks": body.duration_weeks,
         "weekday_minutes": body.weekday_minutes,
         "weekend_minutes": body.weekend_minutes,
+        "context": body.context or "",
         "answers": [],
         "step": 0,
     }

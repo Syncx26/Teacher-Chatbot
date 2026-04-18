@@ -5,44 +5,66 @@
 /* Nordic Slate — dark (default) */
 :root,
 [data-theme="dark"] {
-  --background:     #0F172A;
-  --surface:        #1E293B;
-  --surface-alt:    #334155;
-  --border:         #334155;
-  --text-primary:   #F1F5F9;
-  --text-secondary: #94A3B8;
-  --accent:         #6366F1;
-  --accent-hover:   #818CF8;
-  --success:        #10B981;
-  --warning:        #F59E0B;
-  --danger:         #EF4444;
+  --bg:           #0B1116;
+  --bg-card:      #131B23;
+  --bg-elev:      #1A242E;
+  --ink:          #F3EFE6;
+  --ink-soft:     #C9C0AE;
+  --ink-mute:     #7D8A97;
+  --hairline:     #2A3742;
+  --accent:       #8AA9D1;
+  --accent-soft:  #1B2836;
+  --mark:         #D99670;
+  --good:         #7BB596;
+  --danger:       #E07B7B;
 }
 
 /* Editorial Ink — light */
 [data-theme="light"] {
-  --background:     #FAFAF8;
-  --surface:        #FFFFFF;
-  --surface-alt:    #F3F4F6;
-  --border:         #E5E7EB;
-  --text-primary:   #111827;
-  --text-secondary: #6B7280;
-  --accent:         #4F46E5;
-  --accent-hover:   #4338CA;
-  --success:        #059669;
-  --warning:        #D97706;
-  --danger:         #DC2626;
+  --bg:           #F7F4EE;
+  --bg-card:      #FFFFFF;
+  --bg-elev:      #EFEAE0;
+  --ink:          #0C0A08;
+  --ink-soft:     #3F362C;
+  --ink-mute:     #7D6E5C;
+  --hairline:     #D9CEB8;
+  --accent:       #1E3A5F;
+  --accent-soft:  #E8E2D4;
+  --mark:         #BC5B2E;
+  --good:         #2E6545;
+  --danger:       #B94040;
 }
 
 html, body {
-  background-color: var(--background);
-  color: var(--text-primary);
-  font-family: Inter, system-ui, sans-serif;
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body, 'Inter'), system-ui, sans-serif;
   overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Fraunces for display headings */
+.font-display {
+  font-family: var(--font-display, Georgia), serif;
+}
+
+/* JetBrains Mono for chrome labels */
+.font-label {
+  font-family: var(--font-mono, 'Courier New'), monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
 }
 
 /* Prevent scroll bounce on iOS when swiping cards */
 .card-reel {
   touch-action: none;
   overflow: hidden;
+}
+
+/* Mark rule — orange left border for pull-quotes */
+.mark-rule {
+  border-left: 3px solid var(--mark);
+  padding-left: 0.875rem;
 }

@@ -27,11 +27,24 @@ export async function syncUser(id: string, email: string | null, displayName: st
 }
 
 // Onboarding
-export async function startOnboarding(topic: string, durationWeeks: number, weekdayMinutes: number, weekendMinutes: number) {
+export async function startOnboarding(topic: string, durationWeeks: number, weekdayMinutes: number, weekendMinutes: number, context?: string) {
   const r = await authedFetch("/onboarding/start", {
     method: "POST",
-    body: JSON.stringify({ topic, duration_weeks: durationWeeks, weekday_minutes: weekdayMinutes, weekend_minutes: weekendMinutes }),
+    body: JSON.stringify({ topic, duration_weeks: durationWeeks, weekday_minutes: weekdayMinutes, weekend_minutes: weekendMinutes, context }),
   });
+  return r.json();
+}
+
+// Ingest — fetch text from a URL or YouTube video
+export async function ingestUrl(url: string): Promise<{ text: string; source_type: string; word_count: number }> {
+  const r = await authedFetch("/ingest/url", {
+    method: "POST",
+    body: JSON.stringify({ url }),
+  });
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}));
+    throw new Error(err.detail ?? "Could not fetch URL");
+  }
   return r.json();
 }
 

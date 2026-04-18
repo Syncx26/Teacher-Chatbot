@@ -36,6 +36,10 @@ Return ONLY valid JSON. No markdown fences, no explanation, just the JSON object
 
 
 def build_prompt(state: dict) -> str:
+    context_block = ""
+    if state.get("context"):
+        context_block = f"\n\nSource material (use to ground the curriculum with real examples and accurate details):\n---\n{state['context'][:6000]}\n---"
+
     return f"""Build a {state['duration_weeks']}-week mastery curriculum for: {state['topic']}
 
 User context:
@@ -43,7 +47,7 @@ User context:
 - What failed before: {state['answers'][1] if len(state['answers']) > 1 else 'not provided'}
 - Desired outcome: {state['answers'][2] if len(state['answers']) > 2 else 'not provided'}
 - Weekday session: {state['weekday_minutes']} minutes
-- Weekend session: {state['weekend_minutes']} minutes (0 = no weekend sessions)
+- Weekend session: {state['weekend_minutes']} minutes (0 = no weekend sessions){context_block}
 
 Return JSON exactly matching this schema:
 {{

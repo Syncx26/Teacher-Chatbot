@@ -21,16 +21,27 @@ export default function ExplorePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--background)" }}>
-        <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "var(--accent)" }} />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg)" }}>
+        <div
+          className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
+          style={{ borderColor: "var(--accent)" }}
+        />
       </div>
     );
   }
 
   if (!cards.length) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center" style={{ background: "var(--background)" }}>
-        <p style={{ color: "var(--text-secondary)" }}>Complete today's session to unlock Explore.</p>
+      <div
+        className="min-h-screen flex flex-col items-center justify-center p-8 text-center"
+        style={{ background: "var(--bg)" }}
+      >
+        <p className="font-display text-2xl font-bold mb-2" style={{ color: "var(--ink)" }}>
+          Unlock Explore
+        </p>
+        <p className="text-sm" style={{ color: "var(--ink-mute)" }}>
+          Complete today's session to reveal your reward cards.
+        </p>
         <BottomNav />
       </div>
     );
@@ -39,16 +50,20 @@ export default function ExplorePage() {
   const card = cards[index] as { subtype: string; title: string; body: string; source?: string };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "var(--background)" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "var(--bg)" }}>
       <div className="flex-1 p-4 pb-20 flex flex-col">
+        {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold" style={{ color: "var(--text-primary)" }}>Explore</h2>
-          <span className="text-xs" style={{ color: "var(--text-secondary)" }}>
+          <h2 className="font-display text-xl font-bold" style={{ color: "var(--ink)" }}>Explore</h2>
+          <span className="font-label" style={{ color: "var(--ink-mute)" }}>
             {index + 1} / {cards.length}
           </span>
         </div>
 
-        <div className="flex-1 rounded-2xl overflow-hidden" style={{ background: "var(--surface)" }}>
+        <div
+          className="flex-1 rounded-2xl overflow-hidden"
+          style={{ background: "var(--bg-card)", border: "1px solid var(--hairline)" }}
+        >
           <ExploreCard content={card} />
         </div>
 
@@ -56,17 +71,17 @@ export default function ExplorePage() {
           {index > 0 && (
             <button
               onClick={() => setIndex((i) => i - 1)}
-              className="flex-1 rounded-xl py-3 text-sm font-semibold"
-              style={{ background: "var(--surface-alt)", color: "var(--text-primary)" }}
+              className="flex-1 rounded-full py-3 text-sm font-semibold"
+              style={{ background: "var(--bg-elev)", color: "var(--ink)" }}
             >
-              ← Previous
+              ← Prev
             </button>
           )}
           {index + 1 < cards.length && (
             <button
               onClick={() => setIndex((i) => i + 1)}
-              className="flex-1 rounded-xl py-3 text-sm font-semibold"
-              style={{ background: "var(--accent)", color: "#fff" }}
+              className="flex-1 rounded-full py-3 text-sm font-semibold"
+              style={{ background: "var(--accent)", color: "var(--bg)" }}
             >
               Next →
             </button>

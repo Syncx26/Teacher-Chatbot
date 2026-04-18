@@ -7,41 +7,55 @@ interface Props {
   };
 }
 
-const SUBTYPE_STYLES: Record<string, { label: string; color: string }> = {
-  real_story:        { label: "Real Story",       color: "#8B5CF6" },
-  hot_take:          { label: "Hot Take",         color: "#EF4444" },
-  connection:        { label: "Connection",       color: "#06B6D4" },
-  did_you_know:      { label: "Did You Know",     color: "#F59E0B" },
-  what_would_you_do: { label: "What Would You Do?", color: "#10B981" },
+const SUBTYPE_STYLES: Record<string, { label: string; bg: string; color: string }> = {
+  real_story:        { label: "Real Story",         bg: "rgba(139,92,246,0.15)",  color: "#8B5CF6" },
+  hot_take:          { label: "Hot Take",           bg: "rgba(224,123,123,0.15)", color: "var(--danger)" },
+  connection:        { label: "Connection",         bg: "rgba(138,169,209,0.15)", color: "var(--accent)" },
+  did_you_know:      { label: "Did You Know",       bg: "rgba(217,150,112,0.15)", color: "var(--mark)" },
+  what_would_you_do: { label: "What Would You Do?", bg: "rgba(123,181,150,0.15)", color: "var(--good)" },
 };
 
 export function ExploreCard({ content }: Props) {
-  const style = SUBTYPE_STYLES[content.subtype] ?? { label: "Explore", color: "var(--accent)" };
+  const style = SUBTYPE_STYLES[content.subtype] ?? {
+    label: "Explore",
+    bg: "var(--accent-soft)",
+    color: "var(--accent)",
+  };
 
   return (
-    <div className="flex flex-col gap-4 p-6 h-full">
+    <div className="flex flex-col gap-5 p-6 h-full">
+      {/* Badge */}
       <span
-        className="text-xs font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full w-fit"
-        style={{ background: style.color, color: "#fff" }}
+        className="font-label w-fit px-2 py-0.5 rounded-full"
+        style={{ background: style.bg, color: style.color }}
       >
         {style.label}
       </span>
 
-      <h2 className="text-2xl font-bold leading-tight" style={{ color: "var(--text-primary)" }}>
+      {/* Title */}
+      <h2
+        className="font-display text-2xl font-bold leading-tight"
+        style={{ color: "var(--ink)" }}
+      >
         {content.title}
       </h2>
 
-      <p className="text-base leading-relaxed flex-1" style={{ color: "var(--text-primary)" }}>
+      {/* Body */}
+      <p className="text-base leading-relaxed flex-1" style={{ color: "var(--ink-soft)" }}>
         {content.body}
       </p>
 
+      {/* Source */}
       {content.source && (
-        <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-          — {content.source}
+        <p
+          className="text-xs mark-rule py-0.5"
+          style={{ color: "var(--ink-mute)" }}
+        >
+          {content.source}
         </p>
       )}
 
-      <p className="text-center text-xs" style={{ color: "var(--text-secondary)" }}>
+      <p className="font-label text-center" style={{ color: "var(--ink-mute)" }}>
         Swipe up for more
       </p>
     </div>
