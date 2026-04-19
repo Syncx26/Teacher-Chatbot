@@ -1,5 +1,13 @@
 """
-Curriculum router — Opus builds the curriculum, we stream it back and save to DB.
+Curriculum router — builds week-by-week using Opus for prose and Haiku for JSON conversion.
+
+Architecture:
+1. Opus preamble call: generate mastery_goal + N week themes in natural language
+2. Haiku converts preamble → {mastery_goal, weeks: [{week_number, theme}]}
+3. For each week 1..N:
+   - Opus writes natural-language curriculum for that week's days
+   - Haiku converts → structured week JSON
+4. Save curriculum + sessions + cards atomically
 """
 import json
 import uuid
@@ -9,71 +17,273 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from auth import verify_token
 from db.helpers import get_db
-from db.schema import Curriculum, User
+from db.schema import Curriculum
 from db.session_helpers import parse_and_save_curriculum
 from chatbot.router import TASK_ROUTES, _get_anthropic
-from routers.onboarding import _STATE as ONBOARDING_STATE
 
 router = APIRouter()
 
-CURRICULUM_SYSTEM = """You are a master curriculum designer using adult learning principles:
-- Andragogy (Knowles): adults are self-directed, problem-oriented, need to know WHY
-- SM-2 spaced repetition: schedule review at increasing intervals
+OPUS_MODEL = TASK_ROUTES["curriculum_build"]["model"]  # claude-opus-4-7
+HAIKU_MODEL = "claude-haiku-4-5-20251001"
+
+# ---------------------------------------------------------------------------
+# Prompts
+# ---------------------------------------------------------------------------
+
+PREAMBLE_SYSTEM = """You are a master curriculum designer using adult learning principles:
+- Andragogy (Knowles): adults need to know WHY, learn through problems
+- SM-2 spaced repetition: review at increasing intervals
 - Deliberate practice (Ericsson): exercises slightly harder than current ability
 - Cognitive load theory (Sweller): ONE concept per card, never two ideas
 - Flow state (Csikszentmihalyi): challenge must match skill level
-- Zeigarnik effect: end each session mid-thought so learner returns tomorrow
-- Testing effect: never allow passive reading — every concept needs an exercise
+- Zeigarnik effect: cliffhangers drive return engagement
 
-Design rules:
-- Every concept card is immediately followed by an exercise card
-- Every week ends with a checkpoint card
-- Weekend sessions use review + explore cards only (shorter)
-- End daily sessions on a cliffhanger (hint at tomorrow's concept)
-- Include one explore card per week (variable reward, not a lesson)
-- Exercise difficulty increases 5-10% each week (deliberate practice)
-
-Return ONLY valid JSON. No markdown fences, no explanation, just the JSON object."""
+Design the week-by-week arc:
+- Build from foundations → application → mastery → synthesis
+- Each week has a single theme that builds on prior weeks
+- Difficulty ramps ~5–10% per week
+- The final week is synthesis / capstone"""
 
 
-def build_prompt(state: dict) -> str:
-    context_block = ""
-    if state.get("context"):
-        context_block = f"\n\nSource material (use to ground the curriculum with real examples and accurate details):\n---\n{state['context'][:6000]}\n---"
+WEEK_SYSTEM = """You are a master curriculum designer writing ONE week of a mastery curriculum.
 
-    return f"""Build a {state['duration_weeks']}-week mastery curriculum for: {state['topic']}
+Principles:
+- ONE idea per card. Never two ideas on one screen.
+- Every concept card is immediately followed by an exercise card.
+- The last weekday of the week ends with a checkpoint card.
+- Weekend sessions (if enabled) use explore cards only — shorter, feel like a reward, not a lesson.
+- End each day on a cliffhanger hinting at tomorrow's concept (Zeigarnik).
+- Exercise difficulty is slightly above current ability (deliberate practice).
+
+Card types you can use:
+- concept:    (title, body, analogy, key_term, key_term_definition)
+- exercise:   (prompt, hints, answer, explanation)
+- checkpoint: (question, rubric, gap_if_fail)
+- explore:    (subtype ∈ {real_story, hot_take, connection, did_you_know, what_would_you_do}, title, body, source)
+
+Analogies should be from everyday life, concrete, relatable."""
+
+
+HAIKU_SYSTEM = """You convert natural-language curriculum content into strict JSON.
+Return ONLY the JSON object. No markdown fences. No prose. No explanation."""
+
+
+PREAMBLE_SCHEMA_INSTRUCT = """Convert this curriculum preamble to JSON matching this schema EXACTLY:
+
+{
+  "mastery_goal": "string",
+  "weeks": [
+    {"week_number": 1, "theme": "string"},
+    {"week_number": 2, "theme": "string"},
+    ...
+  ]
+}
+
+Do not add extra fields. Every week must have both week_number and theme.
+
+Preamble:
+"""
+
+
+WEEK_SCHEMA_INSTRUCT = """Convert this week's curriculum content to JSON matching this schema EXACTLY:
+
+{
+  "week_number": <integer>,
+  "theme": "string",
+  "days": [
+    {
+      "day_number": <integer>,
+      "is_weekend": <bool>,
+      "cards": [ /* array of card objects, see below */ ]
+    }
+  ]
+}
+
+Card object schemas (type-discriminated):
+- concept:    {"type": "concept",    "title": "...", "body": "...", "analogy": "...", "key_term": "...", "key_term_definition": "..."}
+- exercise:   {"type": "exercise",   "prompt": "...", "hints": ["...", "..."], "answer": "...", "explanation": "..."}
+- checkpoint: {"type": "checkpoint", "question": "...", "rubric": "...", "passing_threshold": 3, "gap_if_fail": "..."}
+- explore:    {"type": "explore",    "subtype": "real_story|hot_take|connection|did_you_know|what_would_you_do", "title": "...", "body": "...", "source": "..."}
+
+Rules:
+- is_weekend = true for days 6 and 7; false for days 1–5.
+- Preserve card order: concept before its exercise; checkpoint last.
+- passing_threshold is always 3.
+- Omit the "source" field on explore cards if none was given; otherwise include it.
+- Emit strictly valid JSON with double-quoted keys and strings.
+
+Content to convert:
+"""
+
+
+# ---------------------------------------------------------------------------
+# Prompt builders
+# ---------------------------------------------------------------------------
+
+def _context_block(state: dict) -> str:
+    ctx = state.get("context") or ""
+    if not ctx:
+        return ""
+    return f"\n\nSource material (use to ground the curriculum with real examples and accurate details):\n---\n{ctx[:6000]}\n---"
+
+
+def build_preamble_prompt(state: dict) -> str:
+    answers = state.get("answers", [])
+    return f"""Design the high-level structure for a {state['duration_weeks']}-week mastery curriculum.
+
+Topic: {state['topic']}
 
 User context:
-- Why it matters to them: {state['answers'][0] if state['answers'] else 'not provided'}
-- What failed before: {state['answers'][1] if len(state['answers']) > 1 else 'not provided'}
-- Desired outcome: {state['answers'][2] if len(state['answers']) > 2 else 'not provided'}
+- Why it matters to them: {answers[0] if len(answers) > 0 else 'not provided'}
+- What failed before: {answers[1] if len(answers) > 1 else 'not provided'}
+- Desired outcome: {answers[2] if len(answers) > 2 else 'not provided'}
 - Weekday session: {state['weekday_minutes']} minutes
-- Weekend session: {state['weekend_minutes']} minutes (0 = no weekend sessions){context_block}
+- Weekend session: {state['weekend_minutes']} minutes (0 = no weekend sessions){_context_block(state)}
 
-Return JSON exactly matching this schema:
-{{
-  "topic": string,
-  "total_weeks": number,
-  "mastery_goal": string,
-  "weeks": [
-    {{
-      "week_number": number,
-      "theme": string,
-      "days": [
-        {{
-          "day_number": number,
-          "is_weekend": boolean,
-          "cards": [
-            {{"type": "concept", "title": string, "body": string, "analogy": string, "key_term": string, "key_term_definition": string}},
-            {{"type": "exercise", "prompt": string, "hints": [string], "answer": string, "explanation": string}},
-            {{"type": "checkpoint", "question": string, "rubric": string, "passing_threshold": 3, "gap_if_fail": string}}
-          ]
-        }}
-      ]
-    }}
-  ]
-}}"""
+Output in natural language (NO JSON):
 
+Mastery goal: [one clear sentence describing what the user will be able to DO by the end]
+
+Week 1: [short theme title — the week's focus]
+Week 2: [short theme title]
+...
+Week {state['duration_weeks']}: [short theme title — synthesis / capstone]
+
+Build the arc progressively. Early weeks establish foundations; middle weeks apply and deepen;
+final weeks synthesize toward the user's desired outcome."""
+
+
+def build_week_prompt(state: dict, week_num: int, total_weeks: int, theme: str, prev_themes: list[str]) -> str:
+    answers = state.get("answers", [])
+    prev_line = ", ".join(f"W{i+1} ({t})" for i, t in enumerate(prev_themes)) or "none — this is week 1"
+    weekend_section = ""
+    if state["weekend_minutes"] > 0:
+        weekend_section = """
+
+== Day 6 (weekend) ==
+Explore:
+  Subtype: [one of: real_story | hot_take | connection | did_you_know | what_would_you_do]
+  Title: [catchy]
+  Body: [2–4 sentences, first-person where possible — feels like a reward, not a lesson]
+  Source: [source or omit]
+
+== Day 7 (weekend) ==
+Explore:
+  Subtype: [pick a different subtype than day 6]
+  Title: [catchy]
+  Body: [2–4 sentences]
+  Source: [source or omit]"""
+
+    checkpoint_note = ("\n  (On the LAST weekday of the week ONLY, add a Checkpoint after the exercise:"
+                       "\n   Checkpoint:"
+                       "\n     Question: [synthesizing question that tests the week's mastery]"
+                       "\n     Rubric: [what a good answer looks like]"
+                       "\n     Gap if fail: [specific knowledge gap if they can't answer])")
+
+    cliffhanger_target = f"week {week_num + 1}" if week_num < total_weeks else "the capstone synthesis"
+
+    return f"""Write the content for week {week_num} of {total_weeks}.
+
+Topic: {state['topic']}
+This week's theme: {theme}
+Previous weeks: {prev_line}
+
+User context (already known — do not restate):
+- Why it matters: {answers[0] if len(answers) > 0 else 'not provided'}
+- What failed before: {answers[1] if len(answers) > 1 else 'not provided'}
+- Desired outcome: {answers[2] if len(answers) > 2 else 'not provided'}
+
+Session lengths:
+- Weekday: {state['weekday_minutes']} min — fit 1 concept + 1 exercise per day (+ checkpoint on last weekday)
+- Weekend: {state['weekend_minutes']} min ({'skip weekends entirely' if state['weekend_minutes'] == 0 else '1 explore card per day'})
+
+Output in natural language (NO JSON) with this EXACT structure:
+
+== Day 1 (weekday) ==
+Concept:
+  Title: [title]
+  Body: [2–3 sentences teaching ONE idea]
+  Analogy: [one line — everyday comparison]
+  Key term: [term] = [definition]
+Exercise:
+  Prompt: [what the learner must do]
+  Hints: [hint1 | hint2]
+  Answer: [expected answer]
+  Explanation: [why this is the answer]{checkpoint_note}
+
+== Day 2 (weekday) ==
+(same structure — concept + exercise)
+
+== Day 3 (weekday) ==
+(same)
+
+== Day 4 (weekday) ==
+(same)
+
+== Day 5 (weekday) ==
+(same — AND add the Checkpoint, since this is the last weekday){weekend_section}
+
+End the week on a cliffhanger that hints at {cliffhanger_target}.
+The content must build directly on the theme "{theme}" and assume the user has completed previous weeks."""
+
+
+# ---------------------------------------------------------------------------
+# Model calls
+# ---------------------------------------------------------------------------
+
+def _text_from(response) -> str:
+    """Concatenate text blocks from an Anthropic response."""
+    return "".join(b.text for b in response.content if b.type == "text")
+
+
+def call_opus_preamble(client, state: dict) -> str:
+    response = client.messages.create(
+        model=OPUS_MODEL,
+        max_tokens=2000,
+        system=PREAMBLE_SYSTEM,
+        messages=[{"role": "user", "content": build_preamble_prompt(state)}],
+    )
+    return _text_from(response)
+
+
+def call_opus_week(client, state: dict, week_num: int, total_weeks: int, theme: str, prev_themes: list[str]) -> str:
+    response = client.messages.create(
+        model=OPUS_MODEL,
+        max_tokens=8000,
+        system=[{"type": "text", "text": WEEK_SYSTEM, "cache_control": {"type": "ephemeral"}}],
+        messages=[{"role": "user", "content": build_week_prompt(state, week_num, total_weeks, theme, prev_themes)}],
+    )
+    return _text_from(response)
+
+
+def _strip_fences(raw: str) -> str:
+    raw = raw.strip()
+    if raw.startswith("```"):
+        # Drop first fence line + trailing fence
+        parts = raw.split("\n", 1)
+        raw = parts[1] if len(parts) > 1 else raw
+        raw = raw.rsplit("```", 1)[0].strip()
+    return raw
+
+
+def haiku_to_json(client, instruction: str, content: str) -> dict | None:
+    """Convert natural-language content to JSON using Haiku. Returns parsed dict or None."""
+    response = client.messages.create(
+        model=HAIKU_MODEL,
+        max_tokens=8000,
+        system=HAIKU_SYSTEM,
+        messages=[{"role": "user", "content": instruction + content}],
+    )
+    raw = _strip_fences(_text_from(response))
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+
+
+# ---------------------------------------------------------------------------
+# Endpoints
+# ---------------------------------------------------------------------------
 
 class BuildBody(BaseModel):
     user_id: str
@@ -81,6 +291,9 @@ class BuildBody(BaseModel):
 
 @router.post("/build")
 def build_curriculum(body: BuildBody, claims: dict = Depends(verify_token)):
+    # Lazy import to avoid circular dependency at module load
+    from routers.onboarding import _STATE as ONBOARDING_STATE
+
     state = ONBOARDING_STATE.get(body.user_id)
     if not state:
         raise HTTPException(status_code=400, detail="Complete onboarding first.")
@@ -89,35 +302,52 @@ def build_curriculum(body: BuildBody, claims: dict = Depends(verify_token)):
 
     def generate():
         client = _get_anthropic()
-        full_text = ""
-        with client.messages.stream(
-            model=TASK_ROUTES["curriculum_build"]["model"],
-            max_tokens=24000,
-            system=CURRICULUM_SYSTEM,
-            messages=[{"role": "user", "content": build_prompt(state)}],
-        ) as stream:
-            for text in stream.text_stream:
-                full_text += text
-                yield f"data: {text}\n\n"
-
-        # Parse and save after stream completes
-        try:
-            opus_json = json.loads(full_text)
-        except json.JSONDecodeError:
-            yield "data: [ERROR:invalid_json]\n\n"
-            return
-
-        if not isinstance(opus_json, dict) or not opus_json.get("weeks"):
-            yield "data: [ERROR:invalid_schema]\n\n"
-            return
 
         try:
+            # -------- Step 1: preamble (mastery goal + week themes) --------
+            yield "data: [STAGE:preamble]\n\n"
+            preamble_text = call_opus_preamble(client, state)
+            preamble = haiku_to_json(client, PREAMBLE_SCHEMA_INSTRUCT, preamble_text)
+            if not preamble or not preamble.get("weeks"):
+                yield "data: [ERROR:invalid_preamble]\n\n"
+                return
+
+            weeks_meta = preamble["weeks"]
+            total_weeks = len(weeks_meta)
+            mastery_goal = preamble.get("mastery_goal", "")
+
+            # -------- Step 2: per-week generation --------
+            weeks_json = []
+            for i, meta in enumerate(weeks_meta, start=1):
+                theme = meta.get("theme", "")
+                prev_themes = [w.get("theme", "") for w in weeks_meta[: i - 1]]
+
+                week_text = call_opus_week(client, state, i, total_weeks, theme, prev_themes)
+                week_data = haiku_to_json(client, WEEK_SCHEMA_INSTRUCT, week_text)
+
+                if not week_data or not week_data.get("days"):
+                    yield f"data: [ERROR:week_{i}_failed]\n\n"
+                    return
+
+                # Normalize: ensure week_number matches, days are sorted, card positions preserved
+                week_data["week_number"] = i
+                weeks_json.append(week_data)
+                yield f"data: [WEEK:{i}/{total_weeks}]\n\n"
+
+            # -------- Step 3: save atomically --------
+            opus_json = {
+                "topic": state["topic"],
+                "total_weeks": total_weeks,
+                "mastery_goal": mastery_goal,
+                "weeks": weeks_json,
+            }
+
             with get_db() as db:
                 curriculum = Curriculum(
                     id=curriculum_id,
                     user_id=body.user_id,
                     topic=state["topic"],
-                    duration_weeks=state["duration_weeks"],
+                    duration_weeks=total_weeks,
                     weekday_minutes=state["weekday_minutes"],
                     weekend_minutes=state["weekend_minutes"],
                     opus_json=opus_json,
@@ -126,10 +356,11 @@ def build_curriculum(body: BuildBody, claims: dict = Depends(verify_token)):
                 db.add(curriculum)
                 db.flush()
                 parse_and_save_curriculum(curriculum_id, opus_json, db)
+
             yield f"data: [DONE:{curriculum_id}]\n\n"
         except Exception as e:
-            print(f"Curriculum save failed: {e}")
-            yield "data: [ERROR:save_failed]\n\n"
+            print(f"Curriculum build failed: {e}")
+            yield "data: [ERROR:build_failed]\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")
 
@@ -233,5 +464,5 @@ def update_curriculum(curriculum_id: str, body: UpdateCurriculumBody, claims: di
         if not c:
             raise HTTPException(status_code=404, detail="Curriculum not found")
         if body.emoji is not None:
-            c.emoji = body.emoji[:8]  # Limit emoji field length
+            c.emoji = body.emoji[:8]
     return {"ok": True}

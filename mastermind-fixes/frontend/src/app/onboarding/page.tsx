@@ -33,6 +33,8 @@ export default function OnboardingPage() {
   const [starting, setStarting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [buildStage, setBuildStage] = useState<string>("");
+  const [weekProgress, setWeekProgress] = useState<{ current: number; total: number } | null>(null);
 
   async function ensureToken(): Promise<boolean> {
     try {
@@ -96,6 +98,8 @@ export default function OnboardingPage() {
 
       if (data.done) {
         setStep("building");
+        setBuildStage("Planning the arc…");
+        setWeekProgress(null);
         const response = await buildCurriculum(resolvedUserId!);
         let buildError: string | null = null;
         let navigated = false;
@@ -105,11 +109,24 @@ export default function OnboardingPage() {
             localStorage.setItem("curriculum_id", curriculumId);
             navigated = true;
             router.push("/today");
+          } else if (chunk.startsWith("[WEEK:")) {
+            const m = chunk.match(/\[WEEK:(\d+)\/(\d+)\]/);
+            if (m) {
+              const current = Number(m[1]);
+              const total = Number(m[2]);
+              setWeekProgress({ current, total });
+              setBuildStage(`Designing week ${current} of ${total}`);
+            }
+          } else if (chunk.startsWith("[STAGE:")) {
+            const stage = chunk.slice(7, -1);
+            if (stage === "preamble") setBuildStage("Mapping the learning arc…");
           } else if (chunk.startsWith("[ERROR")) {
-            buildError = chunk.includes("invalid_json")
-              ? "The curriculum came back malformed. Try again with a shorter topic."
-              : chunk.includes("invalid_schema")
-              ? "The curriculum was incomplete. Try again."
+            buildError = chunk.includes("invalid_preamble")
+              ? "Couldn't map the learning arc. Try a more specific topic."
+              : chunk.includes("week_") && chunk.includes("_failed")
+              ? "A week failed to generate. Try again — or shorten the duration."
+              : chunk.includes("invalid_json")
+              ? "The curriculum came back malformed. Try again."
               : "Something went wrong saving the curriculum. Try again.";
           }
         });
@@ -327,14 +344,24 @@ export default function OnboardingPage() {
         Building your curriculum…
       </h2>
       <p className="text-sm mb-8" style={{ color: "var(--ink-mute)" }}>
-        Opus is designing your personalised learning path
+        {buildStage || "Opus is designing your personalised learning path"}
       </p>
-      <div className="w-full h-0.5 rounded-full overflow-hidden" style={{ background: "var(--bg-elev)" }}>
+      <div className="w-full h-1 rounded-full overflow-hidden mb-3" style={{ background: "var(--bg-elev)" }}>
         <div
-          className="h-full rounded-full animate-pulse"
-          style={{ background: "var(--mark)", width: "60%" }}
+          className={`h-full rounded-full transition-all duration-500 ${weekProgress ? "" : "animate-pulse"}`}
+          style={{
+            background: "var(--mark)",
+            width: weekProgress
+              ? `${Math.min(100, (weekProgress.current / weekProgress.total) * 100)}%`
+              : "15%",
+          }}
         />
       </div>
+      {weekProgress && (
+        <p className="font-label" style={{ color: "var(--ink-mute)" }}>
+          {weekProgress.current} / {weekProgress.total} weeks
+        </p>
+      )}
     </main>
   );
 }
