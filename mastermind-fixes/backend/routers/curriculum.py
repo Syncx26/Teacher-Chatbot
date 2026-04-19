@@ -103,6 +103,15 @@ def build_curriculum(body: BuildBody, claims: dict = Depends(verify_token)):
         # Parse and save after stream completes
         try:
             opus_json = json.loads(full_text)
+        except json.JSONDecodeError:
+            yield "data: [ERROR:invalid_json]\n\n"
+            return
+
+        if not isinstance(opus_json, dict) or not opus_json.get("weeks"):
+            yield "data: [ERROR:invalid_schema]\n\n"
+            return
+
+        try:
             with get_db() as db:
                 curriculum = Curriculum(
                     id=curriculum_id,
@@ -118,8 +127,9 @@ def build_curriculum(body: BuildBody, claims: dict = Depends(verify_token)):
                 db.flush()
                 parse_and_save_curriculum(curriculum_id, opus_json, db)
             yield f"data: [DONE:{curriculum_id}]\n\n"
-        except json.JSONDecodeError:
-            yield "data: [ERROR:invalid_json]\n\n"
+        except Exception as e:
+            print(f"Curriculum save failed: {e}")
+            yield "data: [ERROR:save_failed]\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")
 

@@ -18,6 +18,20 @@ async function authedFetch(path: string, options: RequestInit = {}): Promise<Res
   });
 }
 
+async function okJson<T = unknown>(r: Response): Promise<T> {
+  if (!r.ok) {
+    let detail = `${r.status} ${r.statusText}`;
+    try {
+      const body = await r.json();
+      if (body?.detail) detail = typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail);
+    } catch {
+      /* ignore */
+    }
+    throw new Error(detail);
+  }
+  return r.json();
+}
+
 // Users
 export async function syncUser(id: string, email: string | null, displayName: string | null) {
   return authedFetch("/users/sync", {
@@ -27,12 +41,12 @@ export async function syncUser(id: string, email: string | null, displayName: st
 }
 
 // Onboarding
-export async function startOnboarding(topic: string, durationWeeks: number, weekdayMinutes: number, weekendMinutes: number, context?: string) {
+export async function startOnboarding(topic: string, durationWeeks: number, weekdayMinutes: number, weekendMinutes: number, context?: string): Promise<{ question: string; step: number; total: number }> {
   const r = await authedFetch("/onboarding/start", {
     method: "POST",
     body: JSON.stringify({ topic, duration_weeks: durationWeeks, weekday_minutes: weekdayMinutes, weekend_minutes: weekendMinutes, context }),
   });
-  return r.json();
+  return okJson(r);
 }
 
 // Ingest — fetch text from a URL or YouTube video
@@ -48,12 +62,12 @@ export async function ingestUrl(url: string): Promise<{ text: string; source_typ
   return r.json();
 }
 
-export async function answerOnboarding(answer: string) {
+export async function answerOnboarding(answer: string): Promise<{ question?: string; step: number; total: number; done?: boolean }> {
   const r = await authedFetch("/onboarding/answer", {
     method: "POST",
     body: JSON.stringify({ answer }),
   });
-  return r.json();
+  return okJson(r);
 }
 
 // Curriculum
@@ -80,7 +94,7 @@ export interface CurriculumSummary {
 
 export async function getUserCurricula(userId: string): Promise<CurriculumSummary[]> {
   const r = await authedFetch(`/curriculum/user/${userId}`);
-  return r.json();
+  return okJson(r);
 }
 
 export async function completeCurriculum(curriculumId: string) {
@@ -107,7 +121,7 @@ export async function getUserStats(userId: string): Promise<{
   active_topics: number;
 }> {
   const r = await authedFetch(`/users/${userId}/stats`);
-  return r.json();
+  return okJson(r);
 }
 
 // Export
@@ -173,7 +187,7 @@ export async function setDigestPreferences(enabled: boolean, day: number, hour: 
 // Sessions
 export async function getTodaySession(curriculumId: string) {
   const r = await authedFetch(`/sessions/today/${curriculumId}`);
-  return r.json();
+  return okJson(r);
 }
 
 export async function completeSession(sessionId: string) {

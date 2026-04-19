@@ -2,13 +2,14 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
+import { useUser, useAuth } from "@clerk/nextjs";
 import { useStore } from "@/lib/store";
 import {
   getUserCurricula,
   getTodaySession,
   completeSession,
   getUserStats,
+  setAuthToken,
   type CurriculumSummary,
 } from "@/lib/api";
 import { CardReel } from "@/components/CardReel";
@@ -22,8 +23,10 @@ function milestoneKey(streak: number) {
 
 export default function TodayPage() {
   const router = useRouter();
-  const { isLoaded } = useUser();
-  const userId = useStore((s) => s.userId);
+  const { isLoaded, user } = useUser();
+  const { getToken } = useAuth();
+  const userIdFromStore = useStore((s) => s.userId);
+  const userId = userIdFromStore || user?.id || null;
   const activeCurriculumId = useStore((s) => s.activeCurriculumId);
   const setActiveCurriculumId = useStore((s) => s.setActiveCurriculumId);
   const { setCurrentSession } = useStore();
@@ -59,6 +62,13 @@ export default function TodayPage() {
     if (!isLoaded || !userId) return;
 
     async function boot() {
+      try {
+        const token = await getToken();
+        setAuthToken(token);
+      } catch {
+        /* UserSync will retry */
+      }
+
       const [curriculaData, stats] = await Promise.all([
         getUserCurricula(userId!).catch(() => [] as CurriculumSummary[]),
         getUserStats(userId!).catch(() => null),
@@ -93,7 +103,7 @@ export default function TodayPage() {
 
     boot().catch((e) => {
       console.error(e);
-      setError("Couldn't load your session. Pull to refresh.");
+      setError(e instanceof Error ? e.message : "Couldn't load your session. Pull to refresh.");
       setLoading(false);
     });
   }, [isLoaded, userId]); // eslint-disable-line react-hooks/exhaustive-deps

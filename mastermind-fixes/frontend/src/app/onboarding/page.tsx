@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
+import { useUser, useAuth } from "@clerk/nextjs";
 import { useStore } from "@/lib/store";
-import { startOnboarding, answerOnboarding, buildCurriculum } from "@/lib/api";
+import { startOnboarding, answerOnboarding, buildCurriculum, setAuthToken } from "@/lib/api";
 import { readStream } from "@/lib/stream";
 
 type Step = "setup" | "questions" | "building";
@@ -12,6 +12,7 @@ type Step = "setup" | "questions" | "building";
 export default function OnboardingPage() {
   const router = useRouter();
   const { user, isLoaded } = useUser();
+  const { getToken } = useAuth();
   const userId = useStore((s) => s.userId);
   const resolvedUserId = userId || user?.id || null;
 
@@ -30,18 +31,36 @@ export default function OnboardingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  async function ensureToken(): Promise<boolean> {
+    try {
+      const token = await getToken();
+      setAuthToken(token);
+      return !!token;
+    } catch {
+      return false;
+    }
+  }
+
   async function startSetup() {
-    if (!topic.trim() || !resolvedUserId || starting) return;
+    if (!topic.trim() || !resolvedUserId || starting || !isLoaded) return;
     setStarting(true);
     setError(null);
     try {
+      if (!(await ensureToken())) {
+        setError("Sign-in hasn't finished. Give it a second and try again.");
+        return;
+      }
       const data = await startOnboarding(topic, durationWeeks, weekdayMinutes, weekendMinutes);
+      if (!data?.question) {
+        setError("Couldn't start onboarding. Please try again.");
+        return;
+      }
       setQuestion(data.question);
       setQuestionStep(data.step);
       setTotalQuestions(data.total);
       setStep("questions");
-    } catch {
-      setError("Couldn't connect. Check your connection and try again.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't connect. Please try again.");
     } finally {
       setStarting(false);
     }
@@ -52,27 +71,44 @@ export default function OnboardingPage() {
     setSubmitting(true);
     setError(null);
     try {
+      await ensureToken();
       const data = await answerOnboarding(answer);
       setAnswer("");
 
       if (data.done) {
         setStep("building");
         const response = await buildCurriculum(resolvedUserId!);
+        let buildError: string | null = null;
+        let navigated = false;
         await readStream(response, (chunk) => {
           if (chunk.startsWith("[DONE:")) {
             const curriculumId = chunk.slice(6, -1);
             localStorage.setItem("curriculum_id", curriculumId);
+            navigated = true;
             router.push("/today");
-          } else if (!chunk.startsWith("[ERROR")) {
+          } else if (chunk.startsWith("[ERROR")) {
+            buildError = chunk.includes("invalid_json")
+              ? "The curriculum came back malformed. Try again with a shorter topic."
+              : chunk.includes("invalid_schema")
+              ? "The curriculum was incomplete. Try again."
+              : "Something went wrong saving the curriculum. Try again.";
+          } else {
             setBuildingText((t) => t + chunk);
           }
         });
-      } else {
+        if (!navigated) {
+          setStep("setup");
+          setError(buildError ?? "Build stopped unexpectedly. Please try again.");
+        }
+      } else if (data.question) {
         setQuestion(data.question);
         setQuestionStep(data.step);
+      } else {
+        setError("Unexpected response. Please try again.");
       }
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (e) {
+      setStep("setup");
+      setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }

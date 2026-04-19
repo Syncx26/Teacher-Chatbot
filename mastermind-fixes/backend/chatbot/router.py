@@ -45,9 +45,9 @@ def _get_groq() -> groq_sdk.Groq:
 # task_name → {model_id, client_fn, notes}
 TASK_ROUTES: dict[str, dict] = {
     # Strategic — Opus only
-    "curriculum_build":     {"model": "claude-opus-4-6",         "client": "anthropic"},
-    "onboarding_dialogue":  {"model": "claude-opus-4-6",         "client": "anthropic"},
-    "curriculum_restructure": {"model": "claude-opus-4-6",       "client": "anthropic"},
+    "curriculum_build":     {"model": "claude-opus-4-7",         "client": "anthropic"},
+    "onboarding_dialogue":  {"model": "claude-opus-4-7",         "client": "anthropic"},
+    "curriculum_restructure": {"model": "claude-opus-4-7",       "client": "anthropic"},
 
     # Primary teaching — Sonnet
     "card_teach":           {"model": "claude-sonnet-4-6",       "client": "anthropic"},
