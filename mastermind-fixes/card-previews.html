@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mastermind — Card Previews</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,700&family=JetBrains+Mono:wght@500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root[data-theme="dark"] {
+    --bg:         #0B1116;
+    --bg-card:    #131B23;
+    --bg-elev:    #1A242E;
+    --ink:        #F3EFE6;
+    --ink-soft:   #C9C0AE;
+    --ink-mute:   #7D8A97;
+    --hairline:   #2A3742;
+    --accent:     #8AA9D1;
+    --accent-soft:#1B2836;
+    --mark:       #D99670;
+    --good:       #7BB596;
+    --danger:     #E07B7B;
+  }
+  :root[data-theme="light"] {
+    --bg:         #F7F4EE;
+    --bg-card:    #FFFFFF;
+    --bg-elev:    #EFEAE0;
+    --ink:        #0C0A08;
+    --ink-soft:   #3F362C;
+    --ink-mute:   #7D6E5C;
+    --hairline:   #D9CEB8;
+    --accent:     #1E3A5F;
+    --accent-soft:#E8E2D4;
+    --mark:       #BC5B2E;
+    --good:       #2E6545;
+    --danger:     #B94040;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    font-family: 'Inter', sans-serif;
+    color: var(--ink);
+    padding: 32px 16px 64px;
+    min-height: 100vh;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 900px;
+    margin: 0 auto 40px;
+  }
+
+  header h1 {
+    font-family: 'Fraunces', serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .theme-toggle {
+    background: var(--bg-elev);
+    border: 1px solid var(--hairline);
+    color: var(--ink-mute);
+    padding: 6px 14px;
+    border-radius: 99px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--hairline);
+    border-radius: 24px;
+    min-height: 480px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 24px;
+    overflow: hidden;
+  }
+
+  /* Badge */
+  .badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 99px;
+    width: fit-content;
+  }
+  .badge-row { display: flex; align-items: center; gap: 8px; }
+
+  /* Card title */
+  .card-title {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--ink);
+  }
+  .card-title-sm {
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--ink);
+  }
+
+  .body-text {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--ink-soft);
+    flex: 1;
+  }
+
+  /* Analogy / mark rule */
+  .mark-rule {
+    border-left: 3px solid var(--mark);
+    padding-left: 12px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+  .mark-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--mark);
+    margin-bottom: 4px;
+  }
+  .mark-text { font-size: 13px; color: var(--ink-soft); }
+
+  /* Key term box */
+  .key-term-box {
+    background: var(--bg-elev);
+    border-left: 3px solid var(--mark);
+    border-radius: 16px;
+    padding: 14px;
+    margin-top: auto;
+  }
+  .key-term-name { font-weight: 600; font-size: 13px; color: var(--ink); }
+  .key-term-def  { font-size: 12px; color: var(--ink-mute); margin-top: 4px; }
+
+  /* Swipe hint */
+  .swipe-hint {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    text-align: center;
+  }
+
+  /* Inputs */
+  textarea, input[type=text] {
+    width: 100%;
+    background: var(--bg-elev);
+    border: 1px solid var(--hairline);
+    color: var(--ink);
+    border-radius: 16px;
+    padding: 12px;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    resize: none;
+    outline: none;
+  }
+  textarea::placeholder { color: var(--ink-mute); }
+
+  /* Buttons */
+  .btn {
+    width: 100%;
+    border: none;
+    border-radius: 99px;
+    padding: 12px;
+    font-weight: 600;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+  }
+  .btn-primary  { background: var(--accent);  color: var(--bg); }
+  .btn-good     { background: var(--good);    color: var(--bg); }
+  .btn-ghost    { background: var(--bg-elev); color: var(--ink); border: 1px solid var(--hairline); }
+  .btn-danger-o { background: rgba(224,123,123,.12); color: var(--danger); border: 1px solid var(--danger); }
+  .btn-mark-o   { background: rgba(217,150,112,.12); color: var(--mark);   border: 1px solid var(--mark); }
+  .btn-good-o   { background: rgba(123,181,150,.12); color: var(--good);   border: 1px solid var(--good); }
+  .btn-row { display: flex; gap: 10px; margin-top: auto; }
+  .btn-row .btn { flex: 1; }
+  .btn-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: auto; }
+
+  /* Feedback boxes */
+  .fb-pass {
+    background: rgba(123,181,150,.1);
+    border-left: 3px solid var(--good);
+    border-radius: 16px;
+    padding: 14px;
+  }
+  .fb-fail {
+    background: rgba(224,123,123,.1);
+    border-left: 3px solid var(--danger);
+    border-radius: 16px;
+    padding: 14px;
+  }
+  .fb-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .answer-box {
+    background: var(--bg-elev);
+    border-left: 3px solid var(--good);
+    border-radius: 16px;
+    padding: 14px;
+  }
+
+  .hint-link {
+    font-size: 13px;
+    color: var(--accent);
+    text-decoration: underline;
+    cursor: pointer;
+    background: none;
+    border: none;
+    text-align: left;
+  }
+
+  .hint-box {
+    background: var(--bg-elev);
+    border-left: 3px solid var(--mark);
+    border-radius: 16px;
+    padding: 12px;
+  }
+  .hint-box p { font-size: 13px; color: var(--ink-soft); }
+
+  /* Source line */
+  .source-line {
+    font-size: 11px;
+    color: var(--ink-mute);
+    border-left: 3px solid var(--mark);
+    padding-left: 8px;
+  }
+
+  /* Section label */
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin-bottom: 8px;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Mastermind Cards</h1>
+  <button class="theme-toggle" onclick="toggleTheme()">Toggle Light</button>
+</header>
+
+<div class="grid">
+
+  <!-- ── CONCEPT ───────────────────────────────────────────────── -->
+  <div>
+    <div class="section-label">Concept Card</div>
+    <div class="card">
+      <span class="badge" style="background:var(--accent-soft);color:var(--accent)">Concept</span>
+
+      <h2 class="card-title">The Attention Mechanism</h2>
+
+      <p class="body-text">
+        Instead of reading a sentence word-by-word, transformers look at
+        every word simultaneously and decide which ones are most relevant
+        to each other. This "attention score" lets the model understand
+        context across the entire input at once.
+      </p>
+
+      <div class="mark-rule">
+        <p class="mark-label">Think of it like…</p>
+        <p class="mark-text">
+          A hiring manager scanning all 200 CVs at once and assigning a
+          "relevance score" to each, rather than reading them one by one.
+        </p>
+      </div>
+
+      <div class="key-term-box">
+        <p class="key-term-name">Attention Score</p>
+        <p class="key-term-def">
+          A number between 0 and 1 that measures how much one token
+          should influence the meaning of another.
+        </p>
+      </div>
+
+      <p class="swipe-hint">Swipe up to continue</p>
+    </div>
+  </div>
+
+  <!-- ── EXERCISE (pre-answer) ──────────────────────────────────── -->
+  <div>
+    <div class="section-label">Exercise Card — answering</div>
+    <div class="card">
+      <span class="badge" style="background:rgba(217,150,112,.15);color:var(--mark)">Exercise</span>
+
+      <p class="card-title-sm">
+        A transformer processes a 10-word sentence. How many attention
+        comparisons does the model make?
+      </p>
+
+      <textarea rows="4" placeholder="Type your answer…"></textarea>
+
+      <button class="hint-link">Need a hint?</button>
+
+      <div class="hint-box">
+        <p>💡 Each word compares itself to every other word, including itself.</p>
+      </div>
+
+      <button class="btn btn-primary" style="margin-top:auto">Check Answer</button>
+    </div>
+  </div>
+
+  <!-- ── EXERCISE (revealed) ───────────────────────────────────── -->
+  <div>
+    <div class="section-label">Exercise Card — answer revealed</div>
+    <div class="card">
+      <span class="badge" style="background:rgba(217,150,112,.15);color:var(--mark)">Exercise</span>
+
+      <p class="card-title-sm">
+        A transformer processes a 10-word sentence. How many attention
+        comparisons does the model make?
+      </p>
+
+      <div class="answer-box">
+        <p class="fb-label" style="color:var(--good)">Answer</p>
+        <p style="font-size:13px;color:var(--ink)">
+          100 comparisons (10 × 10). Every word attends to every other
+          word, including itself — that's n² comparisons for n tokens.
+        </p>
+      </div>
+
+      <p style="font-size:13px;color:var(--ink-mute)">
+        This quadratic cost is why long contexts are expensive.
+        Modern architectures like Flash Attention reduce this to O(n).
+      </p>
+
+      <div class="btn-row">
+        <button class="btn btn-danger-o">Got it wrong</button>
+        <button class="btn btn-good">Got it right</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CHECKPOINT ────────────────────────────────────────────── -->
+  <div>
+    <div class="section-label">Checkpoint Card — graded pass</div>
+    <div class="card">
+      <div class="badge-row">
+        <span class="badge" style="background:rgba(224,123,123,.15);color:var(--danger)">Checkpoint</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-mute);letter-spacing:.08em;text-transform:uppercase">Must pass to continue</span>
+      </div>
+
+      <p class="card-title-sm">
+        Explain in your own words why attention is described as
+        "scaled dot-product". What does scaling achieve?
+      </p>
+
+      <div class="fb-pass">
+        <p class="fb-label" style="color:var(--good)">✓ Passed</p>
+        <p style="font-size:13px;color:var(--ink)">
+          Excellent — you correctly identified that dividing by √d
+          prevents vanishing gradients in the softmax when dimensions
+          are large. Score: 4/5.
+        </p>
+      </div>
+
+      <button class="btn btn-good" style="margin-top:auto">Continue →</button>
+    </div>
+  </div>
+
+  <!-- ── CHECKPOINT failed ────────────────────────────────────── -->
+  <div>
+    <div class="section-label">Checkpoint Card — graded fail</div>
+    <div class="card">
+      <div class="badge-row">
+        <span class="badge" style="background:rgba(224,123,123,.15);color:var(--danger)">Checkpoint</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-mute);letter-spacing:.08em;text-transform:uppercase">Must pass to continue</span>
+      </div>
+
+      <p class="card-title-sm">
+        Explain in your own words why attention is described as
+        "scaled dot-product". What does scaling achieve?
+      </p>
+
+      <div class="fb-fail">
+        <p class="fb-label" style="color:var(--danger)">Not quite</p>
+        <p style="font-size:13px;color:var(--ink)">
+          You described what dot-product does, but missed why we
+          scale. The gap: what happens to softmax gradients when
+          logits grow very large?
+        </p>
+      </div>
+
+      <div class="mark-rule" style="background:var(--bg-elev);border-radius:16px;padding:14px">
+        <p class="mark-label">Let's try another angle</p>
+        <p class="mark-text">
+          Imagine softmax receiving values like [200, 201, 199].
+          The probabilities collapse to nearly [0, 1, 0] and gradients
+          disappear. Dividing by √d keeps values in a range where
+          softmax distributes probability more evenly during training.
+        </p>
+      </div>
+
+      <button class="btn btn-ghost" style="margin-top:auto">Try Again</button>
+    </div>
+  </div>
+
+  <!-- ── EXPLORE ───────────────────────────────────────────────── -->
+  <div>
+    <div class="section-label">Explore Card — Real Story</div>
+    <div class="card">
+      <span class="badge" style="background:rgba(139,92,246,.15);color:#8B5CF6">Real Story</span>
+
+      <h2 class="card-title">The Night Attention Was Invented</h2>
+
+      <p class="body-text">
+        In 2017, eight Google researchers sat in a conference room
+        and wrote the sentence "Attention is all you need" as a
+        joke title. They nearly changed it before publishing.
+        Within three years, that mechanism ended the dominance of
+        recurrent networks and set off the LLM era — GPT, BERT,
+        Gemini, and Claude all trace their lineage to that document.
+        The joke title became the defining phrase of modern AI.
+      </p>
+
+      <p class="source-line">Source: "Attention Is All You Need", Vaswani et al., NeurIPS 2017</p>
+
+      <p class="swipe-hint">Swipe up for more</p>
+    </div>
+  </div>
+
+  <!-- ── EXPLORE hot take ──────────────────────────────────────── -->
+  <div>
+    <div class="section-label">Explore Card — Hot Take</div>
+    <div class="card">
+      <span class="badge" style="background:rgba(224,123,123,.15);color:var(--danger)">Hot Take</span>
+
+      <h2 class="card-title">LLMs Don't Understand Language</h2>
+
+      <p class="body-text">
+        A provocative but defensible claim: transformers don't
+        understand meaning — they model the statistical co-occurrence
+        of tokens. Ask GPT-4 to count the letters in "strawberry" and
+        it fails. Yet it writes poetry that moves people.
+        The debate over whether this constitutes "understanding"
+        may matter less than the practical question: does it matter
+        for your use case?
+      </p>
+
+      <p class="swipe-hint">Swipe up for more</p>
+    </div>
+  </div>
+
+  <!-- ── REVIEW ───────────────────────────────────────────────── -->
+  <div>
+    <div class="section-label">Review Card (Spaced Repetition)</div>
+    <div class="card">
+      <div class="badge-row">
+        <span class="badge" style="background:var(--bg-elev);color:var(--ink-mute)">Review</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-mute);letter-spacing:.08em;text-transform:uppercase">Due today</span>
+      </div>
+
+      <p class="card-title-sm" style="flex:1">
+        The Attention Mechanism
+      </p>
+
+      <div class="answer-box" style="border-left-color:var(--mark)">
+        <p style="font-size:13px;color:var(--ink)">
+          Transformers compute attention scores between every pair of
+          tokens simultaneously (O(n²)), then use those scores to
+          weight how much each token influences the others' representation.
+          Scaled by √d to stabilise gradients.
+        </p>
+      </div>
+
+      <p class="swipe-hint">How well did you remember?</p>
+
+      <div class="btn-3">
+        <button class="btn btn-danger-o">Forgot</button>
+        <button class="btn btn-mark-o">Hard</button>
+        <button class="btn btn-good-o">Easy</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const current = html.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    document.querySelector('.theme-toggle').textContent =
+      next === 'dark' ? 'Toggle Light' : 'Toggle Dark';
+  }
+</script>
+</body>
+</html>
