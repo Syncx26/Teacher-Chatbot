@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { useStore } from "@/lib/store";
-import { startOnboarding, answerOnboarding, buildCurriculum, ingestUrl } from "@/lib/api";
+import { startOnboarding, answerOnboarding, buildCurriculum } from "@/lib/api";
 import { readStream } from "@/lib/stream";
 
 type Step = "setup" | "questions" | "building";
@@ -26,29 +26,9 @@ export default function OnboardingPage() {
   const [answer, setAnswer] = useState("");
   const [buildingText, setBuildingText] = useState("");
 
-  // URL/YouTube context ingestion
-  const [contextUrl, setContextUrl] = useState("");
-  const [contextText, setContextText] = useState("");
-  const [contextStatus, setContextStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
-  const [showUrlInput, setShowUrlInput] = useState(false);
-
-  async function fetchUrlContext() {
-    if (!contextUrl.trim()) return;
-    setContextStatus("loading");
-    try {
-      const data = await ingestUrl(contextUrl.trim());
-      setContextText(data.text);
-      setContextStatus("done");
-    } catch (e: unknown) {
-      setContextStatus("error");
-      const message = e instanceof Error ? e.message : String(e);
-      console.error("Ingest error:", message);
-    }
-  }
-
   async function startSetup() {
     if (!topic.trim() || !userId) return;
-    const data = await startOnboarding(topic, durationWeeks, weekdayMinutes, weekendMinutes, contextText || undefined);
+    const data = await startOnboarding(topic, durationWeeks, weekdayMinutes, weekendMinutes);
     setQuestion(data.question);
     setQuestionStep(data.step);
     setTotalQuestions(data.total);
@@ -132,57 +112,6 @@ export default function OnboardingPage() {
               </select>
             </label>
           ))}
-        </div>
-
-        {/* Optional URL context */}
-        <div className="mb-4">
-          <button
-            onClick={() => setShowUrlInput((v) => !v)}
-            className="text-sm underline"
-            style={{ color: "var(--accent)" }}
-          >
-            {showUrlInput ? "▼" : "▶"} Add URL or YouTube for context (optional)
-          </button>
-
-          {showUrlInput && (
-            <div className="mt-3 flex flex-col gap-2">
-              <input
-                className="w-full rounded-2xl px-4 py-3 text-sm outline-none"
-                style={{
-                  background: "var(--bg-card)",
-                  border: "1px solid var(--hairline)",
-                  color: "var(--ink)",
-                }}
-                placeholder="https://youtube.com/watch?v=... or any URL"
-                value={contextUrl}
-                onChange={(e) => setContextUrl(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") fetchUrlContext(); }}
-              />
-              <button
-                onClick={fetchUrlContext}
-                disabled={!contextUrl.trim() || contextStatus === "loading"}
-                className="rounded-full py-2 text-sm font-semibold transition-opacity"
-                style={{
-                  background: "var(--bg-elev)",
-                  color: "var(--ink)",
-                  border: "1px solid var(--hairline)",
-                  opacity: !contextUrl.trim() ? 0.4 : 1,
-                }}
-              >
-                {contextStatus === "loading" ? "Fetching…" : "Extract Content"}
-              </button>
-              {contextStatus === "done" && (
-                <p className="text-xs" style={{ color: "var(--good)" }}>
-                  ✓ Context extracted — Opus will ground your curriculum in this material
-                </p>
-              )}
-              {contextStatus === "error" && (
-                <p className="text-xs" style={{ color: "var(--danger)" }}>
-                  Could not fetch URL. Curriculum will still be built without it.
-                </p>
-              )}
-            </div>
-          )}
         </div>
 
         <button
