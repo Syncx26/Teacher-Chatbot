@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser, useAuth } from "@clerk/nextjs";
 import { useStore } from "@/lib/store";
-import { startOnboarding, answerOnboarding, buildCurriculum, setAuthToken } from "@/lib/api";
+import { startOnboarding, answerOnboarding, buildCurriculum, ingestUrl, setAuthToken } from "@/lib/api";
 import { readStream } from "@/lib/stream";
 
 type Step = "setup" | "questions" | "building";
@@ -26,7 +26,10 @@ export default function OnboardingPage() {
   const [questionStep, setQuestionStep] = useState(0);
   const [totalQuestions, setTotalQuestions] = useState(3);
   const [answer, setAnswer] = useState("");
-  const [buildingText, setBuildingText] = useState("");
+  const [resourceUrl, setResourceUrl] = useState("");
+  const [ingestedContext, setIngestedContext] = useState("");
+  const [ingesting, setIngesting] = useState(false);
+  const [ingestLabel, setIngestLabel] = useState("");
   const [starting, setStarting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +44,22 @@ export default function OnboardingPage() {
     }
   }
 
+  async function fetchResource() {
+    if (!resourceUrl.trim() || ingesting) return;
+    setIngesting(true);
+    setError(null);
+    try {
+      await ensureToken();
+      const result = await ingestUrl(resourceUrl.trim());
+      setIngestedContext(result.text);
+      setIngestLabel(`${result.source_type} · ${result.word_count.toLocaleString()} words`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't fetch that URL. Try another.");
+    } finally {
+      setIngesting(false);
+    }
+  }
+
   async function startSetup() {
     if (!topic.trim() || !resolvedUserId || starting || !isLoaded) return;
     setStarting(true);
@@ -50,7 +69,7 @@ export default function OnboardingPage() {
         setError("Sign-in hasn't finished. Give it a second and try again.");
         return;
       }
-      const data = await startOnboarding(topic, durationWeeks, weekdayMinutes, weekendMinutes);
+      const data = await startOnboarding(topic, durationWeeks, weekdayMinutes, weekendMinutes, ingestedContext || undefined);
       if (!data?.question) {
         setError("Couldn't start onboarding. Please try again.");
         return;
@@ -92,8 +111,6 @@ export default function OnboardingPage() {
               : chunk.includes("invalid_schema")
               ? "The curriculum was incomplete. Try again."
               : "Something went wrong saving the curriculum. Try again.";
-          } else {
-            setBuildingText((t) => t + chunk);
           }
         });
         if (!navigated) {
@@ -168,6 +185,45 @@ export default function OnboardingPage() {
               </select>
             </label>
           ))}
+        </div>
+
+        {/* Optional resource URL */}
+        <div className="mb-6">
+          <p className="font-label mb-2" style={{ color: "var(--ink-mute)" }}>
+            Add a resource (optional)
+          </p>
+          <div className="flex gap-2">
+            <input
+              className="flex-1 rounded-2xl px-4 py-3 text-sm outline-none"
+              style={{
+                background: "var(--bg-card)",
+                border: "1px solid var(--hairline)",
+                color: "var(--ink)",
+              }}
+              placeholder="Paste a URL or YouTube link…"
+              value={resourceUrl}
+              onChange={(e) => setResourceUrl(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") fetchResource(); }}
+            />
+            <button
+              onClick={fetchResource}
+              disabled={!resourceUrl.trim() || ingesting}
+              className="rounded-2xl px-4 py-3 text-sm font-semibold transition-opacity"
+              style={{
+                background: "var(--bg-elev)",
+                color: "var(--ink-soft)",
+                opacity: !resourceUrl.trim() || ingesting ? 0.4 : 1,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {ingesting ? "Fetching…" : "Fetch"}
+            </button>
+          </div>
+          {ingestLabel && (
+            <p className="text-xs mt-2" style={{ color: "var(--good, #6bbf96)" }}>
+              ✓ {ingestLabel}
+            </p>
+          )}
         </div>
 
         {error && (
@@ -279,11 +335,6 @@ export default function OnboardingPage() {
           style={{ background: "var(--mark)", width: "60%" }}
         />
       </div>
-      {buildingText && (
-        <p className="text-xs mt-6 text-left w-full" style={{ color: "var(--ink-mute)" }}>
-          {buildingText.slice(-200)}
-        </p>
-      )}
     </main>
   );
 }
