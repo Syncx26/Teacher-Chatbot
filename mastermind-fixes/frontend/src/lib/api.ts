@@ -185,7 +185,13 @@ export async function setDigestPreferences(enabled: boolean, day: number, hour: 
 }
 
 // Sessions
-export async function getTodaySession(curriculumId: string) {
+export async function getTodaySession(curriculumId: string): Promise<{
+  session_id: string;
+  cards: unknown[];
+  week_number?: number;
+  day_number?: number;
+  done?: boolean;
+}> {
   const r = await authedFetch(`/sessions/today/${curriculumId}`);
   return okJson(r);
 }
