@@ -2,7 +2,7 @@
   "name": "Mastermind",
   "short_name": "Mastermind",
   "description": "AI tutor for working professionals",
-  "start_url": "/today",
+  "start_url": "/sign-in",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0B1116",
