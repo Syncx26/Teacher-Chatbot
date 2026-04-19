@@ -92,7 +92,7 @@ def build_curriculum(body: BuildBody, claims: dict = Depends(verify_token)):
         full_text = ""
         with client.messages.stream(
             model=TASK_ROUTES["curriculum_build"]["model"],
-            max_tokens=16000,
+            max_tokens=24000,
             system=CURRICULUM_SYSTEM,
             messages=[{"role": "user", "content": build_prompt(state)}],
         ) as stream:

@@ -19,8 +19,8 @@ export default function OnboardingPage() {
   const [step, setStep] = useState<Step>("setup");
   const [topic, setTopic] = useState("");
   const [durationWeeks, setDurationWeeks] = useState(4);
-  const [weekdayMinutes, setWeekdayMinutes] = useState(20);
-  const [weekendMinutes, setWeekendMinutes] = useState(0);
+  const [weekdayMinutes, setWeekdayMinutes] = useState(45);
+  const [weekendMinutes, setWeekendMinutes] = useState(60);
 
   const [question, setQuestion] = useState("");
   const [questionStep, setQuestionStep] = useState(0);
@@ -163,9 +163,9 @@ export default function OnboardingPage() {
 
         <div className="grid grid-cols-3 gap-3 mb-8">
           {[
-            { label: "Duration", value: durationWeeks, options: [1,2,4,6,8,12], fmt: (v: number) => `${v}w`, set: setDurationWeeks },
-            { label: "Weekday", value: weekdayMinutes, options: [10,15,20,30,45,60], fmt: (v: number) => `${v}m`, set: setWeekdayMinutes },
-            { label: "Weekend", value: weekendMinutes, options: [0,10,20,30], fmt: (v: number) => v === 0 ? "Off" : `${v}m`, set: setWeekendMinutes },
+            { label: "Duration", value: durationWeeks, options: [1,2,4,6,8,12,16,20,26], fmt: (v: number) => v >= 4 && v % 4 === 0 ? `${v/4}mo` : `${v}w`, set: setDurationWeeks },
+            { label: "Weekday", value: weekdayMinutes, options: [15,30,45,60,90,120], fmt: (v: number) => v >= 60 ? `${v/60}h` : `${v}m`, set: setWeekdayMinutes },
+            { label: "Weekend", value: weekendMinutes, options: [0,30,60,90,120,180,240], fmt: (v: number) => v === 0 ? "Off" : v >= 60 ? `${v/60}h` : `${v}m`, set: setWeekendMinutes },
           ].map(({ label, value, options, fmt, set }) => (
             <label key={label} className="flex flex-col gap-1">
               <span className="font-label" style={{ color: "var(--ink-mute)" }}>{label}</span>
