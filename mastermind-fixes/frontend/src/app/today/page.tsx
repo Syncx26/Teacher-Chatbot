@@ -40,6 +40,7 @@ export default function TodayPage() {
   const [streakDays, setStreakDays] = useState(0);
   const [milestone, setMilestone] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const loadSession = useCallback(async (curriculumId: string) => {
     setLoading(true);
@@ -59,7 +60,7 @@ export default function TodayPage() {
 
     async function boot() {
       const [curriculaData, stats] = await Promise.all([
-        getUserCurricula(userId!),
+        getUserCurricula(userId!).catch(() => [] as CurriculumSummary[]),
         getUserStats(userId!).catch(() => null),
       ]);
 
@@ -90,7 +91,11 @@ export default function TodayPage() {
       await loadSession(picked);
     }
 
-    boot().catch(console.error);
+    boot().catch((e) => {
+      console.error(e);
+      setError("Couldn't load your session. Pull to refresh.");
+      setLoading(false);
+    });
   }, [isLoaded, userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-dismiss milestone overlay after 2.5s
@@ -115,6 +120,23 @@ export default function TodayPage() {
       await completeSession(sessionData.session_id);
     }
     setDone(true);
+  }
+
+  // ── Error ────────────────────────────────────────────────────────────────
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center" style={{ background: "var(--bg)" }}>
+        <p className="font-display text-xl mb-3" style={{ color: "var(--ink)" }}>{error}</p>
+        <button
+          onClick={() => location.reload()}
+          className="rounded-full px-6 py-2 text-sm font-semibold"
+          style={{ background: "var(--mark)", color: "var(--bg)" }}
+        >
+          Retry
+        </button>
+        <BottomNav />
+      </div>
+    );
   }
 
   // ── Loading ──────────────────────────────────────────────────────────────
