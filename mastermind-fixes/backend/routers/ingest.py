@@ -38,8 +38,7 @@ def _fetch_youtube(url: str) -> str:
     try:
         transcript = YouTubeTranscriptApi.get_transcript(vid)
         text = " ".join(seg["text"] for seg in transcript)
-        # Cap at ~8000 chars to stay within Opus context budget
-        return text[:8000]
+        return text[:40000]
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"Transcript unavailable: {e}")
 
@@ -65,7 +64,7 @@ def _fetch_url(url: str) -> str:
         text = re.sub(r"<[^>]+>", " ", html)
         text = re.sub(r"\s+", " ", text).strip()
 
-    return text[:8000]
+    return text[:40000]
 
 
 @router.post("/url")

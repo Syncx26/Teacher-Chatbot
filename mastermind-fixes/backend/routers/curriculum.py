@@ -136,7 +136,7 @@ def _context_block(state: dict) -> str:
     ctx = state.get("context") or ""
     if not ctx:
         return ""
-    return f"\n\nSource material (use to ground the curriculum with real examples and accurate details):\n---\n{ctx[:6000]}\n---"
+    return f"\n\nSource material (use to ground the curriculum with real examples and accurate details):\n---\n{ctx[:40000]}\n---"
 
 
 def build_preamble_prompt(state: dict) -> str:
