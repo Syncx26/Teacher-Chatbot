@@ -11,8 +11,9 @@ type Step = "setup" | "questions" | "building";
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { user } = useUser();
+  const { user, isLoaded } = useUser();
   const userId = useStore((s) => s.userId);
+  const resolvedUserId = userId || user?.id || null;
 
   const [step, setStep] = useState<Step>("setup");
   const [topic, setTopic] = useState("");
@@ -25,36 +26,55 @@ export default function OnboardingPage() {
   const [totalQuestions, setTotalQuestions] = useState(3);
   const [answer, setAnswer] = useState("");
   const [buildingText, setBuildingText] = useState("");
+  const [starting, setStarting] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function startSetup() {
-    if (!topic.trim() || !userId) return;
-    const data = await startOnboarding(topic, durationWeeks, weekdayMinutes, weekendMinutes);
-    setQuestion(data.question);
-    setQuestionStep(data.step);
-    setTotalQuestions(data.total);
-    setStep("questions");
+    if (!topic.trim() || !resolvedUserId || starting) return;
+    setStarting(true);
+    setError(null);
+    try {
+      const data = await startOnboarding(topic, durationWeeks, weekdayMinutes, weekendMinutes);
+      setQuestion(data.question);
+      setQuestionStep(data.step);
+      setTotalQuestions(data.total);
+      setStep("questions");
+    } catch {
+      setError("Couldn't connect. Check your connection and try again.");
+    } finally {
+      setStarting(false);
+    }
   }
 
   async function submitAnswer() {
-    if (!answer.trim()) return;
-    const data = await answerOnboarding(answer);
-    setAnswer("");
+    if (!answer.trim() || submitting) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const data = await answerOnboarding(answer);
+      setAnswer("");
 
-    if (data.done) {
-      setStep("building");
-      const response = await buildCurriculum(userId!);
-      await readStream(response, (chunk) => {
-        if (chunk.startsWith("[DONE:")) {
-          const curriculumId = chunk.slice(6, -1);
-          localStorage.setItem("curriculum_id", curriculumId);
-          router.push("/today");
-        } else if (!chunk.startsWith("[ERROR")) {
-          setBuildingText((t) => t + chunk);
-        }
-      });
-    } else {
-      setQuestion(data.question);
-      setQuestionStep(data.step);
+      if (data.done) {
+        setStep("building");
+        const response = await buildCurriculum(resolvedUserId!);
+        await readStream(response, (chunk) => {
+          if (chunk.startsWith("[DONE:")) {
+            const curriculumId = chunk.slice(6, -1);
+            localStorage.setItem("curriculum_id", curriculumId);
+            router.push("/today");
+          } else if (!chunk.startsWith("[ERROR")) {
+            setBuildingText((t) => t + chunk);
+          }
+        });
+      } else {
+        setQuestion(data.question);
+        setQuestionStep(data.step);
+      }
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -114,17 +134,23 @@ export default function OnboardingPage() {
           ))}
         </div>
 
+        {error && (
+          <p className="text-sm mb-3 text-center" style={{ color: "var(--danger, #EF4444)" }}>
+            {error}
+          </p>
+        )}
+
         <button
           onClick={startSetup}
-          disabled={!topic.trim()}
+          disabled={!topic.trim() || starting || !isLoaded}
           className="w-full rounded-full py-4 font-semibold text-base transition-opacity"
           style={{
             background: "var(--accent)",
             color: "var(--bg)",
-            opacity: !topic.trim() ? 0.4 : 1,
+            opacity: !topic.trim() || starting || !isLoaded ? 0.4 : 1,
           }}
         >
-          Build My Curriculum →
+          {starting ? "Setting up…" : "Build My Curriculum →"}
         </button>
       </main>
     );
@@ -169,17 +195,23 @@ export default function OnboardingPage() {
           autoFocus
         />
 
+        {error && (
+          <p className="text-sm mb-3 text-center" style={{ color: "var(--danger, #EF4444)" }}>
+            {error}
+          </p>
+        )}
+
         <button
           onClick={submitAnswer}
-          disabled={!answer.trim()}
+          disabled={!answer.trim() || submitting}
           className="w-full rounded-full py-4 font-semibold text-base transition-opacity"
           style={{
             background: "var(--accent)",
             color: "var(--bg)",
-            opacity: !answer.trim() ? 0.4 : 1,
+            opacity: !answer.trim() || submitting ? 0.4 : 1,
           }}
         >
-          Next →
+          {submitting ? "Saving…" : "Next →"}
         </button>
       </main>
     );
