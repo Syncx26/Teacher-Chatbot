@@ -9,7 +9,6 @@ Architecture:
    - Haiku converts → structured week JSON
 4. Save curriculum + sessions + cards atomically
 """
-import json
 import uuid
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
@@ -64,56 +63,69 @@ Card types you can use:
 Analogies should be from everyday life, concrete, relatable."""
 
 
-HAIKU_SYSTEM = """You convert natural-language curriculum content into strict JSON.
-Return ONLY the JSON object. No markdown fences. No prose. No explanation."""
+HAIKU_SYSTEM = """You convert natural-language curriculum content into structured data by calling the emit_json tool.
+Extract every concept, exercise, checkpoint, and explore card from the source text.
+Preserve all content — do not omit or summarise."""
 
 
-PREAMBLE_SCHEMA_INSTRUCT = """Convert this curriculum preamble to JSON matching this schema EXACTLY:
-
-{
-  "mastery_goal": "string",
-  "weeks": [
-    {"week_number": 1, "theme": "string"},
-    {"week_number": 2, "theme": "string"},
-    ...
-  ]
+# JSON schemas passed as tool input_schema — guarantees valid structure via forced tool use
+PREAMBLE_TOOL_SCHEMA: dict = {
+    "type": "object",
+    "properties": {
+        "mastery_goal": {
+            "type": "string",
+            "description": "One sentence: what the learner will be able to DO by the end",
+        },
+        "weeks": {
+            "type": "array",
+            "description": "Week-by-week learning arc in order",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "week_number": {"type": "integer"},
+                    "theme": {"type": "string"},
+                },
+                "required": ["week_number", "theme"],
+            },
+        },
+    },
+    "required": ["mastery_goal", "weeks"],
 }
 
-Do not add extra fields. Every week must have both week_number and theme.
-
-Preamble:
-"""
-
-
-WEEK_SCHEMA_INSTRUCT = """Convert this week's curriculum content to JSON matching this schema EXACTLY:
-
-{
-  "week_number": <integer>,
-  "theme": "string",
-  "days": [
-    {
-      "day_number": <integer>,
-      "is_weekend": <bool>,
-      "cards": [ /* array of card objects, see below */ ]
-    }
-  ]
+WEEK_TOOL_SCHEMA: dict = {
+    "type": "object",
+    "properties": {
+        "week_number": {"type": "integer"},
+        "theme": {"type": "string"},
+        "days": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "day_number": {"type": "integer"},
+                    "is_weekend": {
+                        "type": "boolean",
+                        "description": "true for days 6–7 (weekend), false for days 1–5",
+                    },
+                    "cards": {
+                        "type": "array",
+                        "description": (
+                            "Ordered cards for this day. "
+                            "Each card has a 'type' field: concept | exercise | checkpoint | explore. "
+                            "concept fields: title, body, analogy, key_term, key_term_definition. "
+                            "exercise fields: prompt, hints (array), answer, explanation. "
+                            "checkpoint fields: question, rubric, passing_threshold (always 3), gap_if_fail. "
+                            "explore fields: subtype (real_story|hot_take|connection|did_you_know|what_would_you_do), title, body, source (optional)."
+                        ),
+                        "items": {"type": "object"},
+                    },
+                },
+                "required": ["day_number", "is_weekend", "cards"],
+            },
+        },
+    },
+    "required": ["week_number", "theme", "days"],
 }
-
-Card object schemas (type-discriminated):
-- concept:    {"type": "concept",    "title": "...", "body": "...", "analogy": "...", "key_term": "...", "key_term_definition": "..."}
-- exercise:   {"type": "exercise",   "prompt": "...", "hints": ["...", "..."], "answer": "...", "explanation": "..."}
-- checkpoint: {"type": "checkpoint", "question": "...", "rubric": "...", "passing_threshold": 3, "gap_if_fail": "..."}
-- explore:    {"type": "explore",    "subtype": "real_story|hot_take|connection|did_you_know|what_would_you_do", "title": "...", "body": "...", "source": "..."}
-
-Rules:
-- is_weekend = true for days 6 and 7; false for days 1–5.
-- Preserve card order: concept before its exercise; checkpoint last.
-- passing_threshold is always 3.
-- Omit the "source" field on explore cards if none was given; otherwise include it.
-- Emit strictly valid JSON with double-quoted keys and strings.
-
-Content to convert:
-"""
 
 
 # ---------------------------------------------------------------------------
@@ -256,29 +268,28 @@ def call_opus_week(client, state: dict, week_num: int, total_weeks: int, theme: 
     return _text_from(response)
 
 
-def _strip_fences(raw: str) -> str:
-    raw = raw.strip()
-    if raw.startswith("```"):
-        # Drop first fence line + trailing fence
-        parts = raw.split("\n", 1)
-        raw = parts[1] if len(parts) > 1 else raw
-        raw = raw.rsplit("```", 1)[0].strip()
-    return raw
+def haiku_to_json(client, schema: dict, content: str) -> dict | None:
+    """Convert prose to structured JSON using Haiku forced tool use.
 
-
-def haiku_to_json(client, instruction: str, content: str) -> dict | None:
-    """Convert natural-language content to JSON using Haiku. Returns parsed dict or None."""
+    Forces emit_json tool call — the model cannot produce invalid JSON.
+    Returns the tool input dict, or None if the tool was somehow not called.
+    """
     response = client.messages.create(
         model=HAIKU_MODEL,
         max_tokens=8000,
         system=HAIKU_SYSTEM,
-        messages=[{"role": "user", "content": instruction + content}],
+        tools=[{
+            "name": "emit_json",
+            "description": "Emit the structured JSON representation of the curriculum content.",
+            "input_schema": schema,
+        }],
+        tool_choice={"type": "tool", "name": "emit_json"},
+        messages=[{"role": "user", "content": content}],
     )
-    raw = _strip_fences(_text_from(response))
-    try:
-        return json.loads(raw)
-    except json.JSONDecodeError:
-        return None
+    for block in response.content:
+        if block.type == "tool_use" and block.name == "emit_json":
+            return block.input  # Already a parsed dict — no json.loads needed
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -307,7 +318,7 @@ def build_curriculum(body: BuildBody, claims: dict = Depends(verify_token)):
             # -------- Step 1: preamble (mastery goal + week themes) --------
             yield "data: [STAGE:preamble]\n\n"
             preamble_text = call_opus_preamble(client, state)
-            preamble = haiku_to_json(client, PREAMBLE_SCHEMA_INSTRUCT, preamble_text)
+            preamble = haiku_to_json(client, PREAMBLE_TOOL_SCHEMA, preamble_text)
             if not preamble or not preamble.get("weeks"):
                 yield "data: [ERROR:invalid_preamble]\n\n"
                 return
@@ -323,7 +334,7 @@ def build_curriculum(body: BuildBody, claims: dict = Depends(verify_token)):
                 prev_themes = [w.get("theme", "") for w in weeks_meta[: i - 1]]
 
                 week_text = call_opus_week(client, state, i, total_weeks, theme, prev_themes)
-                week_data = haiku_to_json(client, WEEK_SCHEMA_INSTRUCT, week_text)
+                week_data = haiku_to_json(client, WEEK_TOOL_SCHEMA, week_text)
 
                 if not week_data or not week_data.get("days"):
                     yield f"data: [ERROR:week_{i}_failed]\n\n"
